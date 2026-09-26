@@ -161,3 +161,12 @@
     transform: translate3d(-6vmax, 4vmax, 0) scale(1.12);
   }
 }
+
+@keyframes eq {
+  from {
+    height: 3px;
+  }
+  to {
+    height: 14px;
+  }
+}

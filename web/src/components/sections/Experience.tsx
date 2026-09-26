@@ -31,12 +31,17 @@ export function Experience() {
       <ScrollLine className="mt-14 max-w-3xl">
       <ol>
         {experience.map((job, i) => (
-          <li key={job.company} className="relative pb-12 pl-8 last:pb-0">
+          <li key={job.company} className="group relative isolate mb-4 py-5 pl-8 last:mb-0">
+            {/* Hover: a soft pink panel wipes in from the left and the row nudges right. */}
             <span
               aria-hidden
-              className="absolute top-2 -left-[4.5px] size-2.5 rounded-full border border-accent bg-canvas"
+              className="absolute inset-y-0 right-0 left-4 -z-10 origin-left scale-x-0 rounded-2xl bg-accent-soft transition-transform duration-500 ease-out-expo group-hover:scale-x-100 motion-reduce:transition-none"
             />
-            <Reveal delay={i * 0.06}>
+            <span
+              aria-hidden
+              className="absolute top-7 -left-[4.5px] size-2.5 rounded-full border border-accent bg-canvas transition-colors duration-300 group-hover:bg-accent"
+            />
+            <Reveal delay={i * 0.06} className="transition-transform duration-500 ease-out-expo group-hover:translate-x-3 motion-reduce:transition-none">
               <p className="font-mono text-xs text-muted">{job.period}</p>
               <h3 className="mt-2 text-2xl font-semibold tracking-tight">
                 {job.role} <span className="font-normal text-muted">at {job.company}</span>

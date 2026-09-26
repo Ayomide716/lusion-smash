@@ -37,7 +37,10 @@ Debug query params: `?renderer=webgl|webgpu` picks a backend (and disables the s
 2D motion (`web/src/components/motion/`): custom cursor with contextual labels, magnetic CTAs, masked split-text
 headlines, a scroll-velocity marquee, a statement that lights up word by word, count-up metrics, tilt + spotlight
 project cards, a scroll-drawn timeline, a scroll progress bar, rolling nav links, a pink route-transition wipe and a
-letter-by-letter footer wordmark. Everything is transform/opacity only and switches off under reduced motion.
+letter-by-letter footer wordmark. Set pieces: a 0→100 loading counter, a pinned horizontal Work gallery, stacking
+principle cards, a scroll-driven pink circle reveal for Contact, scrambling section labels, a full-screen mobile menu
+and optional synthesised UI sound (Web Audio, off by default). Everything is transform/opacity/clip-path only and
+switches off under reduced motion.
 
 Design system: generated with the ui-ux-pro-max skill (`.claude/skills/ui-ux-pro-max`) — creative-pink-on-neutral palette,
 Space Grotesk + Archivo, glass nav, parallax that switches off under reduced motion.

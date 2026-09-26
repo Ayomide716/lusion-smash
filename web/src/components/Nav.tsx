@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { site } from "@/content/site";
 import { ScrollProgress } from "@/components/motion/ScrollProgress";
+import { SoundToggle } from "@/components/SoundToggle";
+import { MobileMenu } from "@/components/MobileMenu";
 
 const links = [
   { href: "/#work", label: "Work" },
@@ -53,18 +55,16 @@ export function Nav() {
             </li>
           ))}
         </ul>
-        <Link
-          href="/#contact"
-          className="flex h-10 items-center rounded-full bg-accent px-5 text-sm font-medium text-on-accent transition-transform duration-300 ease-out-expo hover:scale-[1.04] md:hidden"
-        >
-          Contact
-        </Link>
-        <Link
-          href="/cv"
-          className="hidden h-10 items-center rounded-full bg-fg px-5 text-sm font-medium text-canvas transition-transform duration-300 ease-out-expo hover:scale-[1.04] md:flex"
-        >
-          Résumé
-        </Link>
+        <div className="flex items-center gap-2">
+          <SoundToggle />
+          <Link
+            href="/cv"
+            className="hidden h-10 items-center rounded-full bg-fg px-5 text-sm font-medium text-canvas transition-transform duration-300 ease-out-expo hover:scale-[1.04] md:flex"
+          >
+            Résumé
+          </Link>
+          <MobileMenu links={links} />
+        </div>
       </nav>
       <ScrollProgress />
     </header>

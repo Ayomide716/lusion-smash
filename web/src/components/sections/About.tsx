@@ -1,6 +1,7 @@
 import { principles, site, skills } from "@/content/site";
 import { Reveal } from "@/components/Reveal";
-import { Parallax, ParallaxWord } from "@/components/Parallax";
+import { ParallaxWord } from "@/components/Parallax";
+import { StackCards } from "@/components/motion/StackCards";
 import { SectionHeading } from "@/components/SectionHeading";
 
 export function About() {
@@ -32,19 +33,7 @@ export function About() {
         </div>
       </div>
 
-      <ul className="mt-20 grid gap-5 md:grid-cols-3">
-        {principles.map((p, i) => (
-          <li key={p.title}>
-            <Parallax speed={0.06 + i * 0.07} className="h-full">
-            <Reveal delay={i * 0.08} className="glass h-full rounded-3xl p-6 md:p-8">
-              <span className="font-mono text-xs text-accent">0{i + 1}</span>
-              <h3 className="mt-6 text-xl font-semibold tracking-tight">{p.title}</h3>
-              <p className="mt-3 text-fg/70">{p.body}</p>
-            </Reveal>
-            </Parallax>
-          </li>
-        ))}
-      </ul>
+      <StackCards items={principles} />
 
       <Reveal className="glass mt-5 grid gap-8 rounded-3xl p-6 sm:grid-cols-2 md:p-8 lg:grid-cols-4">
         {skills.map((s) => (
