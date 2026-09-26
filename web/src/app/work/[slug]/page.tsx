@@ -5,6 +5,7 @@ import { projects } from "@/content/site";
 import { Reveal } from "@/components/Reveal";
 import { CountUp } from "@/components/motion/CountUp";
 import { SplitReveal } from "@/components/motion/SplitReveal";
+import { ProjectVisual } from "@/components/ProjectVisual";
 
 export function generateStaticParams() {
   return projects.map((p) => ({ slug: p.slug }));
@@ -56,6 +57,16 @@ export default async function CaseStudy({ params }: PageProps<"/work/[slug]">) {
       </div>
 
       <div data-shape="knot" data-shape-x="-0.55" data-shape-scale="0.7" className="mt-24 grid gap-16 md:grid-cols-12">
+        {(project.image || project.live) && (
+          // Stays in view beside the story while you read it.
+          <div className="md:col-span-4 md:col-start-1">
+            <Reveal className="md:sticky md:top-28">
+              <div className={project.image ? "mx-auto w-[70%] max-w-[20rem] md:w-full" : ""}>
+                <ProjectVisual project={project} size="hero" />
+              </div>
+            </Reveal>
+          </div>
+        )}
         <div className="space-y-16 md:col-span-7 md:col-start-6">
           <Reveal>
             <h2 className="font-mono text-xs tracking-widest text-accent uppercase">The problem</h2>

@@ -30,6 +30,17 @@ export type Project = {
   decisions: { title: string; body: string }[];
   outcome: string;
   links: { label: string; href: string }[];
+  /** Phone screenshot shown on the card and case study. */
+  image?: {
+    src: string;
+    alt: string;
+    width: number;
+    height: number;
+    /** For screenshots that aren't phone-shaped: shown whole, centred on this colour. */
+    backdrop?: string;
+  };
+  /** Public URL, shown as a browser frame when there's no screenshot. */
+  live?: string;
 };
 
 export const projects: Project[] = [
@@ -69,6 +80,12 @@ export const projects: Project[] = [
     ],
     outcome:
       "A working two-sided marketplace with real payments, escrow and payouts, hardened so that the rules the UI shows are the rules the database enforces.",
+    image: {
+      src: "/work/naijahustle.jpg",
+      alt: "NaijaHustle home screen on a phone: \"Turn Your Skills Into Wealth\" with Start Earning Today and Post a Job buttons",
+      width: 1080,
+      height: 1788,
+    },
     links: [{ label: "View code on GitHub", href: "https://github.com/Ayomide716/cloud-naija-growth" }],
   },
   {
@@ -107,6 +124,13 @@ export const projects: Project[] = [
     ],
     outcome:
       "A complete grant-management app that ships as an Android APK and iOS build, and adapts to the client's process as it firms up without touching the screens.",
+    image: {
+      src: "/work/zwcc-business-grant.jpg",
+      alt: "ZWCC Business Grant splash screen: the ZWCC flame logo on navy, with the app name and Lagos, Nigeria",
+      width: 1077,
+      height: 1077,
+      backdrop: "#0b2545",
+    },
     links: [{ label: "View code on GitHub", href: "https://github.com/Ayomide716/zwcc-business" }],
   },
   {
@@ -141,7 +165,11 @@ export const projects: Project[] = [
     ],
     outcome:
       "The owner records a sale, sees profit and stock update straight away, and hands the customer a professional invoice on the spot.",
-    links: [{ label: "View code on GitHub", href: "https://github.com/Ayomide716/larshaun-party-packs" }],
+    live: "https://larshaun-party-packs.vercel.app",
+    links: [
+      { label: "Visit live site", href: "https://larshaun-party-packs.vercel.app" },
+      { label: "View code on GitHub", href: "https://github.com/Ayomide716/larshaun-party-packs" },
+    ],
   },
   {
     slug: "amelia-hart",
@@ -175,6 +203,12 @@ export const projects: Project[] = [
     ],
     outcome:
       "A polished, fast single-page site that presents Amelia's services clearly and gives authors a one-tap way to start a conversation.",
+    image: {
+      src: "/work/amelia-hart.jpg",
+      alt: "Amelia Hart site on a phone: \"Your book deserves more readers.\" with a Get your free audit button",
+      width: 1080,
+      height: 1598,
+    },
     links: [{ label: "View code on GitHub", href: "https://github.com/Ayomide716/amelia-hart-s-story-studio" }],
   },
 ];
