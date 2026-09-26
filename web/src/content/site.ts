@@ -9,7 +9,12 @@ export const site = {
   pitch: "I build fast, considered products — from the database to the last pixel.",
   location: "Lagos, Nigeria · Remote",
   email: "ayomidefamoyegun1@gmail.com",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  // Set NEXT_PUBLIC_SITE_URL for a custom domain; on Vercel the production URL is used automatically.
+  url:
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}`
+      : "http://localhost:3000"),
   availability: "Available for freelance projects",
   socials: [
     { label: "GitHub", href: "https://github.com/Ayomide716" },
@@ -216,6 +221,41 @@ export const projects: Project[] = [
     links: [{ label: "View code on GitHub", href: "https://github.com/Ayomide716/amelia-hart-s-story-studio" }],
   },
 ];
+
+/** What clients can hire me for; each points at the project that proves it. */
+export const services = [
+  {
+    title: "Marketplaces & platforms",
+    body: "Two-sided products with accounts, payments, escrow, messaging and an admin side to run it all.",
+    includes: ["Sign-up & roles", "Flutterwave payments", "Admin dashboard"],
+    proof: "naijahustle",
+  },
+  {
+    title: "Mobile apps",
+    body: "Android and iOS apps from one codebase, built to keep working on slow and patchy networks.",
+    includes: ["React Native / Expo", "Offline-safe forms", "Store-ready builds"],
+    proof: "zwcc-business-grant",
+  },
+  {
+    title: "Business dashboards",
+    body: "Sales, stock and reporting tools that replace spreadsheets and show owners the numbers that matter.",
+    includes: ["Reports & charts", "PDF invoices", "CSV exports"],
+    proof: "larshaun-party-packs",
+  },
+  {
+    title: "Websites & landing pages",
+    body: "Fast, animated marketing sites that explain what you do and turn visitors into enquiries.",
+    includes: ["Custom design", "SEO & sharing previews", "Contact that reaches you"],
+    proof: "amelia-hart",
+  },
+] as const;
+
+export const workflow = [
+  { title: "Talk", body: "We go through the problem, who it's for and what a good result looks like." },
+  { title: "Plan", body: "I send a written scope, a timeline and a fixed quote before any code is written." },
+  { title: "Build", body: "I build in small slices and share a live preview link, so you see progress as it happens." },
+  { title: "Launch", body: "I handle deployment, monitoring and the handover, so you're never left guessing." },
+] as const;
 
 export const experience = [
   {

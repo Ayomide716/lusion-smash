@@ -78,7 +78,7 @@ cargo run --release --example bench --manifest-path engine/Cargo.toml
 
 | Variable | Purpose |
 |---|---|
-| `NEXT_PUBLIC_SITE_URL` | Canonical URL for metadata, sitemap and OG image |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URL for metadata, sitemap and share images (on Vercel it defaults to the project's production URL; set it for a custom domain) |
 | `RESEND_API_KEY` | Enables contact-form email via [Resend](https://resend.com); without it messages are logged |
 | `CONTACT_TO_EMAIL` | Where contact messages go (defaults to the email in `site.ts`) |
 | `CONTACT_FROM_EMAIL` | Verified sender address in Resend |
@@ -86,7 +86,12 @@ cargo run --release --example bench --manifest-path engine/Cargo.toml
 ## Deploy (Vercel, free Hobby plan)
 
 Import the repo on Vercel, set **Root Directory** to `web`, add the environment variables above and deploy.
+To see visitor numbers, open the project's **Analytics** tab on Vercel and enable Web Analytics (the `<Analytics />`
+component is already in the layout).
 
-## Before publishing
+SEO: the layout carries Person / ProfessionalService / WebSite structured data, each case study has CreativeWork
+data, and every case study gets its own share image (`app/work/[slug]/opengraph-image.tsx`) with its screenshot.
 
-All content except the name is placeholder — edit `web/src/content/site.ts` (projects, experience, email, links).
+## Content
+
+Everything lives in `web/src/content/site.ts`: projects, services, the working process, experience and links.

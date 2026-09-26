@@ -6,7 +6,8 @@ import { SceneRoot } from "@/components/scene/SceneRoot";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Intro } from "@/components/Intro";
 import { Cursor } from "@/components/motion/Cursor";
-import { site } from "@/content/site";
+import { Analytics } from "@vercel/analytics/next";
+import { services, site } from "@/content/site";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -34,13 +35,41 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
-const personJsonLd = {
+// Structured data so search engines can show the name, role and services properly.
+const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "Person",
-  name: site.name,
-  jobTitle: site.role,
-  url: site.url,
-  sameAs: site.socials.map((s) => s.href),
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": `${site.url}/#person`,
+      name: site.name,
+      jobTitle: "Freelance Full-stack Developer",
+      description: site.pitch,
+      url: site.url,
+      email: `mailto:${site.email}`,
+      address: { "@type": "PostalAddress", addressLocality: "Lagos", addressCountry: "NG" },
+      knowsAbout: ["React", "Next.js", "TypeScript", "React Native", "Supabase", "PostgreSQL", "Payments integration"],
+      sameAs: site.socials.map((s) => s.href),
+    },
+    {
+      "@type": "ProfessionalService",
+      "@id": `${site.url}/#service`,
+      name: `${site.name} — Freelance Full-stack Development`,
+      url: site.url,
+      founder: { "@id": `${site.url}/#person` },
+      areaServed: "Worldwide",
+      address: { "@type": "PostalAddress", addressLocality: "Lagos", addressCountry: "NG" },
+      hasOfferCatalog: {
+        "@type": "OfferCatalog",
+        name: "Services",
+        itemListElement: services.map((s) => ({
+          "@type": "Offer",
+          itemOffered: { "@type": "Service", name: s.title, description: s.body },
+        })),
+      },
+    },
+    { "@type": "WebSite", "@id": `${site.url}/#website`, url: site.url, name: site.name, publisher: { "@id": `${site.url}/#person` } },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -67,7 +96,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </noscript>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
         />
         <Intro />
         <SceneRoot />
@@ -76,6 +105,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main id="main">{children}</main>
         <Footer />
         <Cursor />
+        <Analytics />
       </body>
     </html>
   );

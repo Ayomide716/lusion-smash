@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { projects } from "@/content/site";
+import { projects, site } from "@/content/site";
 import { Reveal } from "@/components/Reveal";
 import { CountUp } from "@/components/motion/CountUp";
 import { SplitReveal } from "@/components/motion/SplitReveal";
@@ -17,7 +17,11 @@ export async function generateMetadata({ params }: PageProps<"/work/[slug]">): P
   const { slug } = await params;
   const project = projects.find((p) => p.slug === slug);
   if (!project) return {};
-  return { title: project.title, description: project.tagline };
+  return {
+    title: project.title,
+    description: project.tagline,
+    openGraph: { type: "article", title: `${project.title} — ${site.name}`, description: project.tagline },
+  };
 }
 
 export default async function CaseStudy({ params }: PageProps<"/work/[slug]">) {
@@ -26,9 +30,22 @@ export default async function CaseStudy({ params }: PageProps<"/work/[slug]">) {
   if (index === -1) notFound();
   const project = projects[index];
   const next = projects[(index + 1) % projects.length];
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: project.title,
+    description: project.tagline,
+    url: `${site.url}/work/${project.slug}`,
+    dateCreated: project.year,
+    creator: { "@type": "Person", "@id": `${site.url}/#person`, name: site.name },
+    keywords: project.stack.join(", "),
+    ...(project.image && { image: `${site.url}${project.image.src}` }),
+    ...(project.live && { sameAs: project.live }),
+  };
 
   return (
     <article className="container-page pt-36 pb-24">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <div data-shape="sphere" data-shape-x="0.5" data-shape-scale="0.7">
         <Reveal>
           <Link href="/#work" className="font-mono text-xs tracking-widest text-muted uppercase hover:text-fg">

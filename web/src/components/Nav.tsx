@@ -10,6 +10,7 @@ import { MobileMenu } from "@/components/MobileMenu";
 
 const links = [
   { href: "/#work", label: "Work" },
+  { href: "/#services", label: "Services" },
   { href: "/#about", label: "About" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/#contact", label: "Contact" },
