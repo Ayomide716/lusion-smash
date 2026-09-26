@@ -139,10 +139,12 @@ html[data-theme="dark"] {
 /* Intro curtain. It lifts when the scene is ready; the CSS delay is a fail-safe so
    content is never stuck behind it if JavaScript or the GPU scene fails. */
 .intro-curtain {
-  animation: curtain-out 0.9s var(--ease-out-expo) 3.2s forwards;
+  animation: curtain-out 0.9s var(--ease-out-expo) 6s forwards;
 }
+/* A different keyframes name so the browser starts a fresh animation: changing
+   only the timing of a running one would jump straight to its end state. */
 .intro-curtain[data-done="true"] {
-  animation: curtain-out 0.9s var(--ease-out-expo) forwards;
+  animation: curtain-out-now 0.9s var(--ease-out-expo) forwards;
 }
 .intro-bar {
   animation: intro-bar 2.4s var(--ease-out-expo) forwards;
@@ -151,6 +153,16 @@ html[data-theme="dark"] {
 /* The curtain fades rather than slides: the particles are waiting behind it in
    the shape of the "100" counter, and fly out of it as it clears. */
 @keyframes curtain-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes curtain-out-now {
+  from {
+    opacity: 1;
+  }
   to {
     opacity: 0;
     visibility: hidden;
@@ -167,9 +179,11 @@ html[data-theme="dark"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .intro-curtain,
-  .intro-curtain[data-done="true"] {
+  .intro-curtain {
     animation: curtain-out 0.01s linear 0.2s forwards;
+  }
+  .intro-curtain[data-done="true"] {
+    animation: curtain-out-now 0.01s linear forwards;
   }
 }
 

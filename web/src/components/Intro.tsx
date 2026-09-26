@@ -4,58 +4,63 @@ import { useEffect, useRef, useState } from "react";
 import { getStats, markIntroDone, subscribeStats } from "@/lib/scene-store";
 import { site } from "@/content/site";
 
-const MIN_MS = 900;
-const MAX_MS = 2600;
+// All times are measured from navigation start (performance.now()), the same
+// clock the CSS fail-safe runs on, so the two can't drift apart on slow phones.
+const MIN_MS = 1100; // always show the counter at least this long
+const FULL_MS = 2800; // counter reaches 100 by here even if the scene isn't ready
 
 /**
  * Full-screen curtain shown while the GPU scene boots, so the first thing people
  * see is a deliberate entrance instead of content popping in piece by piece.
- * CSS lifts it on its own after 3.2s, so it can never trap the page.
+ * The counter eases towards 90 while loading and only completes when the scene
+ * is ready (or time is up); the curtain fades once it reads 100. As a fail-safe
+ * for when JavaScript never runs, CSS fades it at 6s regardless, so it can never
+ * trap the page.
  */
 export function Intro() {
   const [done, setDone] = useState(false);
   const counter = useRef<HTMLSpanElement>(null);
-  const ready = useRef(false);
 
-  // Counter creeps towards 90% while the scene boots, then races to 100.
   useEffect(() => {
-    let frame = 0;
+    let ready = false;
     let shown = 0;
-    const tick = () => {
-      const target = ready.current ? 100 : 90;
-      shown += (target - shown) * (ready.current ? 0.2 : 0.035);
-      if (counter.current) counter.current.textContent = String(Math.min(100, Math.round(shown))).padStart(3, "0");
-      if (shown < 99.5) frame = requestAnimationFrame(tick);
-      else if (counter.current) counter.current.textContent = "100";
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  useEffect(() => {
-    const start = performance.now();
+    let frame = 0;
     let finished = false;
+
     const finish = () => {
       if (finished) return;
       finished = true;
-      ready.current = true;
-      const wait = Math.max(0, MIN_MS - (performance.now() - start));
-      window.setTimeout(() => {
-        setDone(true);
-        // Let the curtain start moving before the hero animates in underneath.
-        window.setTimeout(markIntroDone, 350);
-      }, wait);
+      setDone(true);
+      // Let the curtain start fading before the hero animates in underneath.
+      window.setTimeout(markIntroDone, 350);
     };
+
+    const tick = () => {
+      const now = performance.now();
+      const t = Math.min(1, now / FULL_MS);
+      const byTime = 100 * (1 - Math.pow(1 - t, 3));
+      const complete = ready || now >= FULL_MS;
+      const target = complete ? 100 : Math.min(90, byTime);
+      shown += (target - shown) * (complete ? 0.25 : 0.12);
+      const value = shown > 99.5 ? 100 : Math.round(shown);
+      if (counter.current) counter.current.textContent = String(value).padStart(3, "0");
+      if (value === 100 && now >= MIN_MS) {
+        finish();
+        return;
+      }
+      frame = requestAnimationFrame(tick);
+    };
+
     const check = () => {
       const { backend, fps } = getStats();
-      if (backend === "Static" || fps > 0) finish();
+      if (backend === "Static" || fps > 0) ready = true;
     };
     const unsubscribe = subscribeStats(check);
-    const timeout = window.setTimeout(finish, MAX_MS);
     check();
+    frame = requestAnimationFrame(tick);
     return () => {
       unsubscribe();
-      window.clearTimeout(timeout);
+      cancelAnimationFrame(frame);
     };
   }, []);
 
@@ -71,7 +76,6 @@ export function Intro() {
       </div>
       <span
         ref={counter}
-        data-intro-counter
         className="absolute right-6 bottom-4 font-display text-[22vw] leading-none font-bold tracking-[-0.06em] text-accent tabular-nums md:right-10 md:text-[14vw]"
       >
         000

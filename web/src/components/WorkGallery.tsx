@@ -6,6 +6,7 @@ import type { Project } from "@/content/site";
 import { site } from "@/content/site";
 import { ProjectCard } from "@/components/ProjectCard";
 import { Reveal } from "@/components/Reveal";
+import { sceneState } from "@/lib/scene-store";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
 const DESKTOP = "(min-width: 768px)";
@@ -79,6 +80,27 @@ export function WorkGallery({ projects }: { projects: Project[] }) {
     const i = Math.min(projects.length, Math.floor(v * (projects.length + 0.999)) + 1);
     if (i !== active) setActive(i);
   });
+
+  // Touch screens can't hover, so in the list the particles spell whichever
+  // project is crossing the middle of the screen instead.
+  useEffect(() => {
+    const list = section.current;
+    if (horizontal || !list || !window.matchMedia("(pointer: coarse)").matches) return;
+    const visible = new Set<Element>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => (e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
+        const card = [...visible][0] as HTMLElement | undefined;
+        sceneState.word = card?.querySelector<HTMLElement>("[data-particles]")?.dataset.particles ?? null;
+      },
+      { rootMargin: "-45% 0px -45% 0px" },
+    );
+    list.querySelectorAll("li").forEach((li) => observer.observe(li));
+    return () => {
+      observer.disconnect();
+      sceneState.word = null;
+    };
+  }, [horizontal]);
 
   if (!horizontal) {
     return (

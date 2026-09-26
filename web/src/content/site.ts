@@ -8,7 +8,7 @@ export const site = {
   role: "Full-stack product engineer",
   pitch: "I build fast, considered products — from the database to the last pixel.",
   location: "Lagos, Nigeria · Remote",
-  email: "hello@example.com",
+  email: "ayomidefamoyegun1@gmail.com",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   availability: "Open to full-time roles",
   socials: [

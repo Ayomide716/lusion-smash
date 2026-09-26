@@ -24,10 +24,19 @@ export function subscribeSound(listener: Listener) {
 function audio() {
   if (!ctx) {
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    ctx = new Ctor();
+    // "playback" asks for larger audio buffers: a little more latency, far fewer
+    // underruns (heard as crackle) on phones.
+    ctx = new Ctor({ latencyHint: "playback" });
     master = ctx.createGain();
     master.gain.value = 0.8;
-    master.connect(ctx.destination);
+    // Gentle limiter so overlapping sounds can never clip.
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -14;
+    limiter.knee.value = 12;
+    limiter.ratio.value = 6;
+    limiter.attack.value = 0.005;
+    limiter.release.value = 0.25;
+    master.connect(limiter).connect(ctx.destination);
   }
   return { ctx, master: master! };
 }
@@ -62,9 +71,11 @@ export function playClick() {
   blip(520, 260, 0.12, 0.06, "triangle");
 }
 
-// Generative ambient: slow warm chords with a soft chorus, the occasional
-// pentatonic chime, all through a synthesised reverb. No low drone and no
-// filter wobble, so it reads as calm music rather than a hum.
+// Generative ambient: slow, warm sine chords with the occasional pentatonic
+// chime, through a light echo "room". Built to be cheap for phones: one fixed
+// set of oscillators crossfades between chords (nothing is created or
+// destroyed while it plays), and the room is two filtered delay lines rather
+// than a convolution reverb.
 const CHORDS = [
   [220.0, 261.63, 329.63, 392.0], // Fmaj7 (no root) — A C E G
   [196.0, 246.94, 329.63, 392.0], // C/G — G B E G
@@ -73,70 +84,82 @@ const CHORDS = [
 ];
 const CHIMES = [523.25, 587.33, 659.26, 783.99, 880.0]; // C major pentatonic
 const CHORD_SECONDS = 10;
-
-/** A few seconds of decaying stereo noise: a cheap, lush reverb impulse. */
-function impulse(ctx: AudioContext, seconds = 4.5) {
-  const length = Math.floor(ctx.sampleRate * seconds);
-  const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
-  for (let ch = 0; ch < 2; ch++) {
-    const data = buffer.getChannelData(ch);
-    for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3);
-  }
-  return buffer;
-}
+const FADE_SECONDS = 4;
+const VOICE_LEVEL = 0.016;
 
 function startAmbient() {
   const { ctx, master } = audio();
+  const now = ctx.currentTime;
   const out = ctx.createGain();
-  out.gain.value = 0;
-  out.gain.linearRampToValueAtTime(1, ctx.currentTime + 3);
+  out.gain.setValueAtTime(0, now);
+  out.gain.linearRampToValueAtTime(1, now + 3);
   out.connect(master);
 
-  const reverb = ctx.createConvolver();
-  reverb.buffer = impulse(ctx);
-  const wet = ctx.createGain();
-  wet.gain.value = 0.55;
-  reverb.connect(wet).connect(out);
-  const dry = ctx.createGain();
-  dry.gain.value = 0.45;
-  dry.connect(out);
-
+  // Soft top end, then dry + a two-tap filtered feedback echo for space.
   const tone = ctx.createBiquadFilter();
   tone.type = "lowpass";
-  tone.frequency.value = 1800;
-  tone.Q.value = 0.3;
-  tone.connect(dry);
-  tone.connect(reverb);
+  tone.frequency.value = 2200;
+  tone.Q.value = 0.2;
+  tone.connect(out);
+  const room = ctx.createGain();
+  room.gain.value = 0.3;
+  room.connect(out);
+  for (const [time, feedback] of [[0.37, 0.42], [0.53, 0.38]]) {
+    const delay = ctx.createDelay(1);
+    delay.delayTime.value = time;
+    const damp = ctx.createBiquadFilter();
+    damp.type = "lowpass";
+    damp.frequency.value = 1400;
+    const fb = ctx.createGain();
+    fb.gain.value = feedback;
+    tone.connect(delay);
+    delay.connect(damp).connect(fb).connect(delay);
+    damp.connect(room);
+  }
 
-  const voices: OscillatorNode[] = [];
-  const timers: number[] = [];
-
-  /** One chord: each note is a sine plus a quieter triangle a hair apart, faded in and out. */
-  const playChord = (notes: number[], at: number) => {
-    const attack = 3.5;
-    const hold = CHORD_SECONDS - 1;
-    const release = 5;
-    for (const f of notes) {
-      const env = ctx.createGain();
-      env.gain.setValueAtTime(0, at);
-      env.gain.linearRampToValueAtTime(0.018, at + attack);
-      env.gain.setValueAtTime(0.018, at + hold);
-      env.gain.linearRampToValueAtTime(0, at + hold + release);
-      env.connect(tone);
-      for (const [type, detune, level] of [["sine", -2, 1], ["triangle", 2, 0.35]] as const) {
+  // Two banks of four voices; each voice is a sine plus a faint octave sine.
+  const oscillators: OscillatorNode[] = [];
+  const banks = [0, 1].map(() => {
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    gain.connect(tone);
+    const voices = [0, 1, 2, 3].map(() => {
+      const pair = [1, 2].map((mult) => {
         const o = ctx.createOscillator();
-        o.type = type;
-        o.frequency.value = f;
-        o.detune.value = detune;
+        o.type = "sine";
         const g = ctx.createGain();
-        g.gain.value = level;
-        o.connect(g).connect(env);
-        o.start(at);
-        o.stop(at + hold + release + 0.1);
-        voices.push(o);
-        o.onended = () => voices.splice(voices.indexOf(o), 1);
-      }
-    }
+        g.gain.value = mult === 1 ? VOICE_LEVEL : VOICE_LEVEL * 0.12;
+        o.connect(g).connect(gain);
+        o.start(now);
+        oscillators.push(o);
+        return { o, mult };
+      });
+      return pair;
+    });
+    return { gain, voices };
+  });
+
+  const timers: number[] = [];
+  let index = 0;
+  let active = 0;
+
+  // Retune the silent bank to the next chord, then crossfade to it.
+  const next = () => {
+    const t = ctx.currentTime;
+    const incoming = banks[active];
+    const outgoing = banks[1 - active];
+    CHORDS[index % CHORDS.length].forEach((f, v) => {
+      for (const { o, mult } of incoming.voices[v]) o.frequency.setValueAtTime(f * mult, t);
+    });
+    incoming.gain.gain.cancelScheduledValues(t);
+    incoming.gain.gain.setValueAtTime(incoming.gain.gain.value, t);
+    incoming.gain.gain.linearRampToValueAtTime(1, t + FADE_SECONDS);
+    outgoing.gain.gain.cancelScheduledValues(t);
+    outgoing.gain.gain.setValueAtTime(outgoing.gain.gain.value, t);
+    outgoing.gain.gain.linearRampToValueAtTime(0, t + FADE_SECONDS);
+    index++;
+    active = 1 - active;
+    timers.push(window.setTimeout(next, CHORD_SECONDS * 1000));
   };
 
   /** A soft bell: sine with a faint octave, quick attack, long exponential tail. */
@@ -144,31 +167,24 @@ function startAmbient() {
     const t = ctx.currentTime;
     const f = CHIMES[Math.floor(Math.random() * CHIMES.length)];
     const env = ctx.createGain();
-    env.gain.setValueAtTime(0, t);
-    env.gain.linearRampToValueAtTime(0.014, t + 0.02);
-    env.gain.exponentialRampToValueAtTime(0.0001, t + 3.5);
-    env.connect(reverb);
-    env.connect(dry);
-    for (const [mult, level] of [[1, 1], [2, 0.25]]) {
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.exponentialRampToValueAtTime(0.012, t + 0.03);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + 3);
+    env.connect(tone);
+    for (const [mult, level] of [[1, 1], [2, 0.2]]) {
       const o = ctx.createOscillator();
       o.frequency.value = f * mult;
       const g = ctx.createGain();
       g.gain.value = level;
       o.connect(g).connect(env);
       o.start(t);
-      o.stop(t + 3.6);
+      o.stop(t + 3.1);
     }
-    timers.push(window.setTimeout(chime, 2500 + Math.random() * 4500));
+    timers.push(window.setTimeout(chime, 3000 + Math.random() * 5000));
   };
 
-  let index = 0;
-  const next = () => {
-    playChord(CHORDS[index % CHORDS.length], ctx.currentTime + 0.05);
-    index++;
-    timers.push(window.setTimeout(next, CHORD_SECONDS * 1000));
-  };
   next();
-  timers.push(window.setTimeout(chime, 4000));
+  timers.push(window.setTimeout(chime, 4500));
 
   return {
     stop() {
@@ -177,12 +193,8 @@ function startAmbient() {
       out.gain.cancelScheduledValues(t);
       out.gain.setValueAtTime(out.gain.value, t);
       out.gain.linearRampToValueAtTime(0, t + 1.2);
-      [...voices].forEach((o) => {
-        try {
-          o.stop(t + 1.3);
-        } catch {}
-      });
-      window.setTimeout(() => out.disconnect(), 1500);
+      oscillators.forEach((o) => o.stop(t + 1.3));
+      window.setTimeout(() => out.disconnect(), 1600);
     },
   };
 }

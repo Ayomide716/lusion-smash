@@ -40,12 +40,13 @@ project cards, a scroll-drawn timeline, a scroll progress bar, rolling nav links
 letter-by-letter footer wordmark. Set pieces: a 0→100 loading counter, a pinned horizontal Work gallery, stacking
 principle cards, a scroll-driven pink circle reveal for Contact, scrambling section labels, a full-screen mobile menu
 and optional synthesised UI sound (Web Audio, off by default): click/hover blips plus a generative ambient of slow
-chords and pentatonic chimes through a synthesised reverb. A light/dark toggle wipes the new theme in as a circle from
+sine chords and pentatonic chimes through a light echo room — a fixed set of crossfading oscillators, large audio
+buffers and a limiter keep it crackle-free on phones. A light/dark toggle wipes the new theme in as a circle from
 the click point (View Transitions API) and is applied before first paint from `localStorage`; the particles switch to
 additive glow on dark. Hero letters thin out under the cursor (variable font axis), and clicks send a shockwave ring
-through the particle field. The particles spell whatever you hover (nav links, project names), hand off from the
-loader (they wait behind the curtain in the shape of its "100" counter), sway with phone tilt, and the fluid's dye
-field is drawn as a soft ink trail behind the cursor. Everything is transform/opacity/clip-path only and
+through the particle field. The particles spell whatever you hover (nav links, project names; on phones, the
+project crossing the middle of the screen), sway with phone tilt, and the fluid's dye field is drawn as a soft ink
+trail behind the cursor. Everything is transform/opacity/clip-path only and
 switches off under reduced motion.
 
 Design system: generated with the ui-ux-pro-max skill (`.claude/skills/ui-ux-pro-max`) — creative-pink-on-neutral palette,
