@@ -33,10 +33,16 @@ const layers = [
     body: "Semantic, server-rendered HTML that works without JavaScript or a GPU. The 3D layer is purely decorative and hidden from assistive technology.",
   },
   {
-    lang: "Rust + C++ → WebAssembly",
-    status: "Next",
-    role: "CPU-side precision work",
-    body: "Cursor ray picking and gesture interpretation, compiled to a single WASM module that JavaScript reads through a zero-copy Float32Array view.",
+    lang: "C++ → WebAssembly",
+    status: "Live",
+    role: "Fluid dynamics",
+    body: "A stable-fluids Navier–Stokes solver (semi-Lagrangian advection, pressure projection, vorticity confinement) on an 80×80 grid. Freestanding C++ with no libc or allocation, linked straight into the Rust module.",
+  },
+  {
+    lang: "Rust → WebAssembly",
+    status: "Live",
+    role: "Engine core",
+    body: "Owns the safe boundary around the solver, a critically damped spring that smooths your cursor, a fixed 60 Hz simulation clock, and half-float packing. The whole engine is one 26 KB module with zero imports; JavaScript reads the flow field through a zero-copy view of its memory and hands it to the GPU as a texture.",
   },
   {
     lang: "Python (FastAPI)",
@@ -63,10 +69,10 @@ export default function HowItWorks() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-fg/70">
             Each layer uses the language best suited to its job, and covers the weaknesses of the others. These numbers
-            are live from the particle field behind this page.
+            are live from the particle field behind this page. Move your cursor to stir the fluid.
           </p>
         </Reveal>
-        <Reveal delay={0.1} className="mt-10 max-w-3xl">
+        <Reveal delay={0.1} className="mt-10 max-w-5xl">
           <LiveStats />
         </Reveal>
       </section>

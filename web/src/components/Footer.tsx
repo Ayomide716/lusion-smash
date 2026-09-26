@@ -6,7 +6,7 @@ export function Footer() {
     <footer className="container-page print:hidden border-t border-line py-10 text-sm text-muted">
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <p>
-          © {new Date().getFullYear()} {site.name}. Built with Next.js, WebGPU and TSL.
+          © {new Date().getFullYear()} {site.name}. Built with Next.js, WebGPU, TSL, Rust and C++.
         </p>
         <ul className="flex flex-wrap gap-5">
           {site.socials.map((s) => (

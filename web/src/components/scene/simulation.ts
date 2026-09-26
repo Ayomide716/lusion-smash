@@ -1,8 +1,10 @@
 import * as THREE from "three/webgpu";
 import {
   Fn,
+  texture,
   uvec2,
   textureLoad,
+  vec2,
   If,
   float,
   hash,
@@ -21,6 +23,7 @@ import {
 } from "three/tsl";
 import { buildShapes, SHAPES, type ShapeName } from "./shapes";
 import { sceneState, setStats } from "@/lib/scene-store";
+import { STATE, type Engine } from "@/lib/engine";
 
 export type SimulationOptions = {
   count: number;
@@ -108,6 +111,14 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
   });
   const targetNodes = targets.map((tex) => textureLoad(tex, texel) as unknown as THREE.Node<"vec4">);
 
+  // Velocity field from the WebAssembly fluid solver (RG half floats, uv/s),
+  // uploaded each frame straight from a view over wasm memory. Starts empty
+  // and stays harmlessly zero if the engine can't load.
+  const fieldTex = new THREE.DataTexture(new Uint16Array(2), 1, 1, THREE.RGFormat, THREE.HalfFloatType);
+  fieldTex.magFilter = THREE.LinearFilter;
+  fieldTex.minFilter = THREE.LinearFilter;
+  fieldTex.needsUpdate = true;
+
   const u = {
     dt: uniform(0),
     from: uniform(0, "int"),
@@ -126,6 +137,9 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     pointerStrength: uniform(reducedMotion ? 0.6 : 1),
     energy: uniform(0),
     size: uniform(size),
+    /** World units spanned by the viewport at z = 0 (maps world xy ↔ fluid uv). */
+    fieldScale: uniform(new THREE.Vector2(1, 1)),
+    fluidDrag: uniform(reducedMotion ? 2 : 4.5),
   };
 
   const pick = (idx: typeof u.from) => {
@@ -173,6 +187,15 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     const flow = curlNoise(p.mul(0.55).add(vec3(0, time.mul(0.07), time.mul(0.11))));
     const churn = select(dust, float(0.6), u.energy.mul(1.5).add(0.35));
     acc.addAssign(flow.mul(u.turbulence).mul(churn));
+
+    // Fluid: particles are dragged towards the local flow of the Navier–Stokes
+    // field, but only where it's moving, so still air doesn't damp them.
+    const fieldUV = p.xy.div(u.fieldScale).add(0.5);
+    const inside = fieldUV.greaterThanEqual(vec2(0)).all().and(fieldUV.lessThanEqual(vec2(1)).all());
+    const flowUV = texture(fieldTex, fieldUV, 0).xy;
+    const flowWorld = select(inside, flowUV.mul(u.fieldScale), vec2(0));
+    const moving = flowWorld.length().mul(1.5).saturate();
+    acc.xy.addAssign(flowWorld.sub(vel.xy).mul(u.fluidDrag).mul(moving));
 
     // Pointer: push outward, swirl around the cursor and drag along its velocity.
     const d = p.xy.sub(u.pointer.xy);
@@ -231,8 +254,11 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     u,
     pointerLast: { x: 0, y: 0 },
     fps: { frames: 0, elapsed: 0 },
+    fieldTex,
+    engine: null as Engine | null,
     dispose() {
       material.dispose();
+      fieldTex.dispose();
       targets.forEach((tex) => tex.dispose());
     },
   };
@@ -280,8 +306,28 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   }
 
   const ptr = sceneState.pointer;
-  const px = ptr.x * halfW;
-  const py = ptr.y * halfH;
+  u.fieldScale.value.set(halfW * 2, halfH * 2);
+
+  // Rust smooths the pointer and drives the C++ fluid solver; fall back to the
+  // raw pointer until the WebAssembly module has loaded.
+  let nx = ptr.x;
+  let ny = ptr.y;
+  const engine = sim.engine;
+  if (engine) {
+    engine.frame(delta, ptr.x, ptr.y, ptr.active, aspect);
+    nx = engine.state[STATE.POINTER_X];
+    ny = engine.state[STATE.POINTER_Y];
+    const image = sim.fieldTex.image as { data: Uint16Array; width: number; height: number };
+    if (image.width !== engine.size) {
+      sim.fieldTex.image = { data: engine.field, width: engine.size, height: engine.size };
+    } else {
+      image.data = engine.field;
+    }
+    sim.fieldTex.needsUpdate = true;
+  }
+
+  const px = nx * halfW;
+  const py = ny * halfH;
   if (ptr.active) {
     u.pointer.value.set(px, py, 0);
     u.pointerVel.value.set(px - sim.pointerLast.x, py - sim.pointerLast.y).divideScalar(Math.max(dt, 1e-3) * 60);
@@ -301,7 +347,7 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   w.frames++;
   w.elapsed += delta;
   if (w.elapsed >= 0.5) {
-    setStats({ fps: Math.round(w.frames / w.elapsed) });
+    setStats({ fps: Math.round(w.frames / w.elapsed), engineMs: engine ? engine.stepMs : null });
     w.frames = 0;
     w.elapsed = 0;
   }

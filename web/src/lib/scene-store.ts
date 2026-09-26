@@ -8,13 +8,15 @@ export type SceneStats = {
   particles: number;
   fps: number;
   motion: "Full" | "Reduced" | "—";
+  /** Average cost of one WebAssembly engine frame, or null before it loads. */
+  engineMs: number | null;
 };
 
 type Listener = () => void;
 
 const listeners = new Set<Listener>();
 
-let stats: SceneStats = { backend: "Starting", particles: 0, fps: 0, motion: "—" };
+let stats: SceneStats = { backend: "Starting", particles: 0, fps: 0, motion: "—", engineMs: null };
 
 export const sceneState = {
   /** Pointer in normalised device coordinates (-1..1). */
