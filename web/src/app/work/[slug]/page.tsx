@@ -92,6 +92,25 @@ export default async function CaseStudy({ params }: PageProps<"/work/[slug]">) {
           <p className="mt-4 max-w-3xl text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">
             {project.outcome}
           </p>
+          {project.links.length > 0 && (
+            <div className="mt-8 flex flex-wrap gap-3">
+              {project.links.map((l) => (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  data-cursor="Open"
+                  className="group inline-flex h-12 items-center gap-2 rounded-full bg-fg px-6 text-sm font-medium text-canvas transition-colors duration-300 hover:bg-accent"
+                >
+                  {l.label}
+                  <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
+                    ↗
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
         </Reveal>
         <ul className="mt-12 grid gap-5 sm:grid-cols-3">
           {project.metrics.map((m, i) => (

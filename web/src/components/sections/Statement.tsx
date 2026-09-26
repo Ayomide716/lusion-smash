@@ -1,7 +1,7 @@
 import { Marquee } from "@/components/motion/Marquee";
 import { ScrollHighlight } from "@/components/motion/ScrollHighlight";
 
-const disciplines = ["Product engineering", "Full-stack", "TypeScript", "Go", "Rust → WASM", "WebGPU", "Design systems", "Postgres"];
+const disciplines = ["Product engineering", "Full-stack", "TypeScript", "React Native", "Supabase", "Payments", "Rust → WASM", "WebGPU"];
 
 /** Velocity marquee band followed by a statement that lights up word by word on scroll. */
 export function Statement() {

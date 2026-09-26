@@ -1,5 +1,5 @@
-// Site content. Everything below except the name is PLACEHOLDER copy —
-// replace projects, experience, links and metrics with real ones before publishing.
+// Site content. Projects are real (written from each repository's code and
+// README). Still PLACEHOLDER: experience entries, LinkedIn/X links, location.
 
 export const site = {
   name: "Famoyegun Ayomide",
@@ -12,7 +12,7 @@ export const site = {
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   availability: "Open to full-time roles",
   socials: [
-    { label: "GitHub", href: "https://github.com/ayomide716" },
+    { label: "GitHub", href: "https://github.com/Ayomide716" },
     { label: "LinkedIn", href: "https://www.linkedin.com/" },
     { label: "X", href: "https://x.com/" },
   ],
@@ -31,140 +31,153 @@ export type Project = {
   approach: string[];
   decisions: { title: string; body: string }[];
   outcome: string;
+  links: { label: string; href: string }[];
 };
 
 export const projects: Project[] = [
   {
-    slug: "ledgerly",
-    title: "Ledgerly",
-    tagline: "Invoicing and cash-flow forecasting for small agencies.",
-    year: "2025",
-    role: "Founding engineer",
-    stack: ["Next.js", "TypeScript", "PostgreSQL", "Stripe", "tRPC"],
-    hue: 165,
+    slug: "naijahustle",
+    title: "NaijaHustle",
+    tagline: "A Fiverr-style freelance and jobs marketplace built for Nigerians.",
+    year: "2026",
+    role: "Full-stack developer",
+    stack: ["React", "TypeScript", "Supabase", "Flutterwave", "Deno Edge Functions", "TanStack Query", "Sentry"],
+    hue: 150,
     metrics: [
-      { value: "3.2×", label: "faster invoice creation" },
-      { value: "41%", label: "fewer late payments" },
-      { value: "99.98%", label: "uptime over 12 months" },
+      { value: "7-day", label: "escrow before sellers are paid" },
+      { value: "11", label: "server functions for payments and email" },
+      { value: "26", label: "pages: gigs, jobs, orders, messages, admin" },
     ],
     problem:
-      "Agencies were juggling spreadsheets, a payments tool and an accounting package. Nobody knew what cash would land next month until it was too late.",
+      "Nigerian freelancers and small businesses need somewhere local to buy and sell services, post jobs and get paid in naira. The hard part isn't the listings; it's trust: buyers need their money safe until work is delivered, and sellers need to know they'll actually be paid.",
     approach: [
-      "Interviewed 14 agency owners and mapped the invoice-to-payment journey end to end.",
-      "Shipped a thin slice in three weeks: create, send and track an invoice with Stripe payment links.",
-      "Layered a forecasting view on top once we had real payment-timing data.",
+      "Built both sides of the marketplace: gig listings and orders for buyers and sellers, plus a jobs board with applications for employers and talent.",
+      "Integrated Flutterwave for card and bank payments, bank-account verification and subscriptions, all behind Supabase Edge Functions so no secret keys ever reach the browser.",
+      "Added messaging, reviews, a blog and help centre, an admin dashboard, email notifications, and Sentry error monitoring.",
     ],
     decisions: [
       {
-        title: "Postgres as the source of truth for money",
-        body: "Every balance change is an append-only ledger row with a database-level constraint, so totals can be audited and replayed.",
+        title: "Escrow instead of instant payouts",
+        body: "The full payment is held on the platform rather than split to the seller at checkout. A scheduled function settles completed orders only after a 7-day holding period, which leaves room for disputes and refunds.",
       },
       {
-        title: "Webhooks are idempotent by design",
-        body: "Stripe events are stored before they're processed and keyed by event ID, which made retries and incident recovery boring.",
+        title: "A webhook you can't fake or replay",
+        body: "Every Flutterwave webhook must carry the secret hash, compared in constant time so it can't be guessed by timing. The transaction and amount are then re-verified with Flutterwave's API, and processing is idempotent, so duplicate deliveries are safe.",
+      },
+      {
+        title: "Trust enforced in the database, not the UI",
+        body: "A security pass removed the ability for users to update their own payment rows (which would have let someone mark an order paid without paying), and moved review eligibility into Postgres: you can only review someone you've actually completed an order or job with.",
       },
     ],
     outcome:
-      "Grew to 600+ paying teams. The forecasting view became the most-cited reason for upgrading to the paid plan.",
+      "A working two-sided marketplace with real payments, escrow and payouts, hardened so that the rules the UI shows are the rules the database enforces.",
+    links: [{ label: "View code on GitHub", href: "https://github.com/Ayomide716/cloud-naija-growth" }],
   },
   {
-    slug: "pulse",
-    title: "Pulse",
-    tagline: "Real-time product analytics that engineers actually open.",
-    year: "2024",
-    role: "Lead full-stack engineer",
-    stack: ["React", "Go", "WebSockets", "ClickHouse", "Redis"],
-    hue: 265,
+    slug: "zwcc-business-grant",
+    title: "ZWCC Business Grant",
+    tagline: "A mobile app that runs a church's business grant programme, from application to a year of monitoring.",
+    year: "2026",
+    role: "Mobile & backend developer",
+    stack: ["React Native", "Expo", "TypeScript", "Supabase", "React Query", "Zod"],
+    hue: 215,
     metrics: [
-      { value: "<150ms", label: "p95 dashboard query" },
-      { value: "2B", label: "events / month" },
-      { value: "−60%", label: "infra cost vs. previous vendor" },
+      { value: "14", label: "config files that define the whole workflow" },
+      { value: "47", label: "screens across applicant, committee and admin" },
+      { value: "~200 KB", label: "per uploaded photo, down from ~4 MB" },
     ],
     problem:
-      "The team's analytics vendor was slow, expensive and sampled data aggressively. Product decisions were being made on stale, partial numbers.",
+      "Zion World Christian Center in Lagos needed to run its 2026 business grant end to end: applications, document verification, committee review, signed agreements and a year of beneficiary reports. The catch: the client's exact process wasn't final while the app was being built.",
     approach: [
-      "Designed an ingestion pipeline in Go that batches events into ClickHouse.",
-      "Built live dashboards that stream updates over WebSockets instead of polling.",
-      "Ran both systems in parallel for a month to prove the numbers matched.",
+      "Built a native Android and iOS app with separate experiences for applicants, the grant committee and administrators.",
+      "Made the workflow data, not code: statuses, transitions, approval stages, required documents, form questions and notification copy all live in configuration that the screens read.",
+      "Designed for Nigerian mobile networks from the start: slow, metered and often dropping out.",
     ],
     decisions: [
       {
-        title: "Pre-aggregate the hot paths",
-        body: "Materialised views for the ten most-viewed charts took p95 from seconds to under 150ms without touching the UI.",
+        title: "The workflow is configuration",
+        body: "A small engine evaluates the workflow config, and one screen renders every form step from it. When the client changes the process, it's an edit to one file, not a rewrite. Even the database's access rules read the same status flags.",
       },
       {
-        title: "Backpressure over dropped events",
-        body: "The ingest service applies backpressure to clients rather than silently sampling, so the numbers stay trustworthy under load.",
+        title: "Security lives in Postgres",
+        body: "Row Level Security on every table, private storage with short-lived signed URLs, and triggers that stop applicants verifying their own documents, editing signed agreement terms or promoting themselves. The audit log is append-only, even for admins.",
+      },
+      {
+        title: "Built for bad connections",
+        body: "Form drafts save to the device on every keystroke and sync in the background, so a dropped connection never loses a half-written proposal. Photos are compressed from about 4 MB to about 200 KB before upload, and nothing is downloaded until it's needed.",
       },
     ],
     outcome:
-      "Replaced the vendor entirely. Weekly active dashboard users tripled because the tool was finally fast enough to use in meetings.",
+      "A complete grant-management app that ships as an Android APK and iOS build, and adapts to the client's process as it firms up without touching the screens.",
+    links: [{ label: "View code on GitHub", href: "https://github.com/Ayomide716/zwcc-business" }],
   },
   {
-    slug: "atlas",
-    title: "Atlas",
-    tagline: "AI search across a company's docs, tickets and code.",
-    year: "2024",
-    role: "Full-stack engineer",
-    stack: ["Python", "FastAPI", "pgvector", "Next.js", "OpenTelemetry"],
-    hue: 20,
+    slug: "larshaun-party-packs",
+    title: "Larshaun Party Packs",
+    tagline: "A sales, inventory and reporting dashboard for a party supplies business.",
+    year: "2026",
+    role: "Full-stack developer",
+    stack: ["React", "TypeScript", "Supabase", "Recharts", "jsPDF", "PapaParse"],
+    hue: 30,
     metrics: [
-      { value: "68%", label: "of searches answered first try" },
-      { value: "11 min", label: "saved per support ticket" },
-      { value: "4 wks", label: "from idea to pilot" },
+      { value: "1-click", label: "PDF invoices and vouchers" },
+      { value: "6", label: "workspaces: sales, stock, CRM, reports…" },
+      { value: "CSV", label: "export for every record type" },
     ],
     problem:
-      "Support and engineering answers lived in five different tools. New hires spent their first month asking the same questions.",
+      "The business was tracking sales, expenses and stock by hand, which made it hard to know what was actually profitable, when to reorder, and to send customers a proper invoice.",
     approach: [
-      "Built connectors that incrementally sync docs, tickets and repositories.",
-      "Combined keyword and vector search, with every answer citing its sources.",
-      "Instrumented each step so we could see exactly where answers went wrong.",
+      "Built a single dashboard for recording sales and expenses, with profit worked out automatically.",
+      "Added inventory with low-stock reorder alerts, a simple customer list (CRM), and a reports view with charts.",
+      "Made paperwork one click: branded PDF invoices and vouchers, plus CSV exports for the accountant.",
     ],
     decisions: [
       {
-        title: "Citations are mandatory",
-        body: "An answer without a source isn't shown. It cost some coverage but earned the trust that drove adoption.",
+        title: "Documents generated in the browser",
+        body: "Invoices and vouchers are rendered client-side with jsPDF and autoTable, each carrying its own reference number stored against the sale, so there's no document server to run or pay for.",
       },
       {
-        title: "Evaluate before shipping",
-        body: "A set of 300 real questions with graded answers ran on every change, turning prompt tweaks into measurable experiments.",
+        title: "Numbers the owner can act on",
+        body: "The dashboard leads with the financial summary and profit, and stock levels flag items to reorder, rather than burying the useful figures in tables.",
       },
     ],
     outcome:
-      "Rolled out to every team after the pilot. It became the default place new hires go before asking in chat.",
+      "The owner records a sale, sees profit and stock update straight away, and hands the customer a professional invoice on the spot.",
+    links: [{ label: "View code on GitHub", href: "https://github.com/Ayomide716/larshaun-party-packs" }],
   },
   {
-    slug: "mise",
-    title: "Mise",
-    tagline: "An offline-first kitchen operations app for restaurants.",
-    year: "2023",
-    role: "Product engineer",
-    stack: ["React Native", "TypeScript", "SQLite", "Node.js", "Expo"],
+    slug: "amelia-hart",
+    title: "Amelia Hart Story Studio",
+    tagline: "A marketing site for a book marketing expert, built to turn authors into clients.",
+    year: "2026",
+    role: "Frontend developer",
+    stack: ["React", "TypeScript", "Vite", "Tailwind CSS", "shadcn/ui", "Framer Motion"],
     hue: 330,
     metrics: [
-      { value: "4.8★", label: "App Store rating" },
-      { value: "0", label: "lost orders during outages" },
-      { value: "35%", label: "less food waste reported" },
+      { value: "9", label: "services, from trailers to ghostwriting" },
+      { value: "3", label: "pricing tiers, side by side" },
+      { value: "15", label: "animated sections" },
     ],
     problem:
-      "Kitchens run on paper because Wi-Fi drops mid-service. Existing apps froze exactly when they were needed most.",
+      "Amelia helps authors market their books (campaigns, Amazon optimisation, cinematic trailers, covers and ghostwriting) and needed a site that shows the work and makes it easy for an author to get in touch.",
     approach: [
-      "Spent shifts in three kitchens to see how prep lists and stock counts really work.",
-      "Built the app offline-first, with a local database that syncs when the connection returns.",
-      "Designed for greasy hands: big targets, high contrast, one-thumb flows.",
+      "Structured the page as a sales journey: hero, services, a four-step process, samples, success stories, testimonials, pricing, FAQ and contact.",
+      "Showcased the work directly: a carousel of books she's promoted and playable cinematic trailer samples.",
+      "Added scroll-triggered animation throughout with Framer Motion, plus full SEO metadata.",
     ],
     decisions: [
       {
-        title: "Conflict-free sync",
-        body: "Stock counts are merged as operations, not overwritten as values, so two cooks editing offline never clobber each other.",
+        title: "Contact where the client already works",
+        body: "Enquiries go straight to WhatsApp or email rather than through a form, because that's where Amelia replies to authors. Fewer steps for them, faster replies from her.",
       },
       {
-        title: "Design for the worst minute of service",
-        body: "Every flow was tested during a real Friday rush. Anything that needed more than two taps was redesigned.",
+        title: "Proof before pricing",
+        body: "Samples, success stories and testimonials come before the pricing table, so authors have seen results by the time they compare packages.",
       },
     ],
     outcome:
-      "Adopted by 40 restaurants in the first six months, mostly through word of mouth between chefs.",
+      "A polished, fast single-page site that presents Amelia's services clearly and gives authors a one-tap way to start a conversation.",
+    links: [{ label: "View code on GitHub", href: "https://github.com/Ayomide716/amelia-hart-s-story-studio" }],
   },
 ];
 
@@ -199,15 +212,15 @@ export const skills = [
   },
   {
     group: "Frontend",
-    items: ["TypeScript", "React / Next.js", "Tailwind CSS", "Three.js / WebGPU", "Accessibility"],
+    items: ["TypeScript", "React / Next.js", "React Native / Expo", "Tailwind CSS", "Three.js / WebGPU"],
   },
   {
     group: "Backend",
-    items: ["Node.js", "Go", "Python / FastAPI", "PostgreSQL", "Redis"],
+    items: ["Supabase / PostgreSQL", "Row Level Security", "Edge Functions (Deno)", "Payments (Flutterwave)", "Node.js"],
   },
   {
     group: "Platform",
-    items: ["AWS / Vercel", "Docker", "CI/CD", "Observability", "Rust → WebAssembly"],
+    items: ["Vercel", "Expo EAS builds", "Sentry monitoring", "Vitest", "Rust → WebAssembly"],
   },
 ];
 
