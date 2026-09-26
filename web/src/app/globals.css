@@ -57,6 +57,15 @@
     cursor: pointer;
   }
 
+  /* Custom cursor (fine pointers only, see components/motion/Cursor.tsx). */
+  html.has-custom-cursor,
+  html.has-custom-cursor * {
+    cursor: none;
+  }
+  html.has-custom-cursor :is(input, textarea) {
+    cursor: text;
+  }
+
   html.lenis,
   html.lenis body {
     height: auto;

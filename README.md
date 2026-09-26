@@ -34,6 +34,11 @@ Planned: `services/mood` (Python FastAPI), `services/presence` (Go WebSockets).
 
 Debug query params: `?renderer=webgl|webgpu` picks a backend (and disables the slow-device watchdog), `?fx=0` disables post-processing.
 
+2D motion (`web/src/components/motion/`): custom cursor with contextual labels, magnetic CTAs, masked split-text
+headlines, a scroll-velocity marquee, a statement that lights up word by word, count-up metrics, tilt + spotlight
+project cards, a scroll-drawn timeline, a scroll progress bar, rolling nav links, a pink route-transition wipe and a
+letter-by-letter footer wordmark. Everything is transform/opacity only and switches off under reduced motion.
+
 Design system: generated with the ui-ux-pro-max skill (`.claude/skills/ui-ux-pro-max`) — creative-pink-on-neutral palette,
 Space Grotesk + Archivo, glass nav, parallax that switches off under reduced motion.
 

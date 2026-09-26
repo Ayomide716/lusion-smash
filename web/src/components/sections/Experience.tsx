@@ -2,6 +2,7 @@ import Link from "next/link";
 import { experience } from "@/content/site";
 import { Reveal } from "@/components/Reveal";
 import { ParallaxWord } from "@/components/Parallax";
+import { ScrollLine } from "@/components/motion/ScrollLine";
 import { SectionHeading } from "@/components/SectionHeading";
 
 export function Experience() {
@@ -27,12 +28,13 @@ export function Experience() {
         </Reveal>
       </div>
 
-      <ol className="mt-14 max-w-3xl border-l border-line">
+      <ScrollLine className="mt-14 max-w-3xl">
+      <ol>
         {experience.map((job, i) => (
           <li key={job.company} className="relative pb-12 pl-8 last:pb-0">
             <span
               aria-hidden
-              className="absolute top-2 -left-[5px] size-2.5 rounded-full border border-accent bg-canvas"
+              className="absolute top-2 -left-[4.5px] size-2.5 rounded-full border border-accent bg-canvas"
             />
             <Reveal delay={i * 0.06}>
               <p className="font-mono text-xs text-muted">{job.period}</p>
@@ -44,6 +46,7 @@ export function Experience() {
           </li>
         ))}
       </ol>
+      </ScrollLine>
     </section>
   );
 }

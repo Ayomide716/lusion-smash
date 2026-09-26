@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { SceneRoot } from "@/components/scene/SceneRoot";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Intro } from "@/components/Intro";
+import { Cursor } from "@/components/motion/Cursor";
 import { site } from "@/content/site";
 import "./globals.css";
 
@@ -67,6 +68,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Nav />
         <main id="main">{children}</main>
         <Footer />
+        <Cursor />
       </body>
     </html>
   );

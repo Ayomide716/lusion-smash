@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { site } from "@/content/site";
+import { ScrollProgress } from "@/components/motion/ScrollProgress";
 
 const links = [
   { href: "/#work", label: "Work" },
@@ -36,9 +37,18 @@ export function Nav() {
             <li key={l.href}>
               <Link
                 href={l.href}
-                className="rounded-full px-3.5 py-2 text-fg/70 transition-colors duration-200 hover:bg-black/5 hover:text-fg"
+                className="group relative block overflow-hidden rounded-full px-3.5 py-2 text-fg/70 transition-colors duration-200 hover:text-fg"
               >
-                {l.label}
+                {/* Text roll: the label slides up and an accent copy slides in beneath it. */}
+                <span className="block transition-transform duration-500 ease-out-expo group-hover:-translate-y-full motion-reduce:transition-none">
+                  {l.label}
+                </span>
+                <span
+                  aria-hidden
+                  className="absolute inset-x-3.5 top-full block py-2 text-accent transition-transform duration-500 ease-out-expo group-hover:-translate-y-full motion-reduce:transition-none"
+                >
+                  {l.label}
+                </span>
               </Link>
             </li>
           ))}
@@ -56,6 +66,7 @@ export function Nav() {
           Résumé
         </Link>
       </nav>
+      <ScrollProgress />
     </header>
   );
 }

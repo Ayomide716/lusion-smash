@@ -3,6 +3,25 @@
 import Link from "next/link";
 import type { Project } from "@/content/site";
 import { sceneState } from "@/lib/scene-store";
+import { CountUp } from "@/components/motion/CountUp";
+
+/** 3D tilt towards the pointer plus a spotlight that follows it, via CSS variables (no re-renders). */
+function track(e: React.PointerEvent<HTMLElement>) {
+  if (e.pointerType !== "mouse") return;
+  const el = e.currentTarget;
+  const box = el.getBoundingClientRect();
+  const px = (e.clientX - box.left) / box.width;
+  const py = (e.clientY - box.top) / box.height;
+  el.style.setProperty("--mx", `${px * 100}%`);
+  el.style.setProperty("--my", `${py * 100}%`);
+  el.style.setProperty("--ry", `${(px - 0.5) * 8}deg`);
+  el.style.setProperty("--rx", `${(0.5 - py) * 8}deg`);
+}
+
+function reset(e: React.PointerEvent<HTMLElement>) {
+  e.currentTarget.style.setProperty("--rx", "0deg");
+  e.currentTarget.style.setProperty("--ry", "0deg");
+}
 
 export function ProjectCard({ project, index }: { project: Project; index: number }) {
   const excite = () => {
@@ -12,10 +31,18 @@ export function ProjectCard({ project, index }: { project: Project; index: numbe
   return (
     <Link
       href={`/work/${project.slug}`}
+      data-cursor="View"
       onPointerEnter={excite}
+      onPointerMove={track}
+      onPointerLeave={reset}
       onFocus={excite}
-      className="glass group relative flex h-full flex-col overflow-hidden rounded-3xl p-6 transition-transform duration-500 ease-out-expo hover:-translate-y-1 md:p-8"
+      className="glass group relative flex h-full flex-col overflow-hidden rounded-3xl p-6 transition-transform duration-500 ease-out-expo [transform:perspective(1000px)_rotateX(var(--rx,0deg))_rotateY(var(--ry,0deg))] hover:duration-150 motion-reduce:[transform:none] md:p-8"
     >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{ background: "radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgb(236 72 153 / 0.14), transparent 60%)" }}
+      />
       <div
         aria-hidden
         className="absolute -top-24 -right-24 size-64 rounded-full opacity-40 blur-3xl transition-opacity duration-500 group-hover:opacity-80"
@@ -25,7 +52,9 @@ export function ProjectCard({ project, index }: { project: Project; index: numbe
         <span>{String(index + 1).padStart(2, "0")}</span>
         <span>{project.year}</span>
       </div>
-      <h3 className="relative mt-16 text-3xl font-semibold tracking-tight md:text-4xl">{project.title}</h3>
+      <h3 className="relative mt-16 text-3xl font-bold tracking-tight transition-transform duration-500 ease-out-expo group-hover:translate-x-1 md:text-4xl">
+        {project.title}
+      </h3>
       <p className="relative mt-3 max-w-md text-fg/70">{project.tagline}</p>
       <ul className="relative mt-6 flex flex-wrap gap-2">
         {project.stack.slice(0, 4).map((s) => (
@@ -36,7 +65,7 @@ export function ProjectCard({ project, index }: { project: Project; index: numbe
       </ul>
       <div className="relative mt-auto flex items-end justify-between gap-4 pt-10">
         <p>
-          <span className="block text-2xl font-semibold text-accent">{project.metrics[0].value}</span>
+          <CountUp value={project.metrics[0].value} className="block font-display text-3xl font-bold text-accent" />
           <span className="text-sm text-muted">{project.metrics[0].label}</span>
         </p>
         <span

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { projects } from "@/content/site";
 import { Reveal } from "@/components/Reveal";
+import { CountUp } from "@/components/motion/CountUp";
+import { SplitReveal } from "@/components/motion/SplitReveal";
 
 export function generateStaticParams() {
   return projects.map((p) => ({ slug: p.slug }));
@@ -31,7 +33,9 @@ export default async function CaseStudy({ params }: PageProps<"/work/[slug]">) {
           <Link href="/#work" className="font-mono text-xs tracking-widest text-muted uppercase hover:text-fg">
             ← All work
           </Link>
-          <h1 className="mt-8 text-6xl font-semibold tracking-[-0.04em] md:text-8xl">{project.title}</h1>
+          <h1 className="mt-8 text-6xl font-bold tracking-[-0.05em] md:text-9xl">
+            <SplitReveal text={project.title} />
+          </h1>
           <p className="mt-6 max-w-2xl text-xl text-balance text-fg/75 md:text-2xl">{project.tagline}</p>
         </Reveal>
 
@@ -93,7 +97,7 @@ export default async function CaseStudy({ params }: PageProps<"/work/[slug]">) {
           {project.metrics.map((m, i) => (
             <li key={m.label}>
               <Reveal delay={i * 0.06} className="glass h-full rounded-3xl p-6">
-                <p className="text-4xl font-semibold text-accent">{m.value}</p>
+                <CountUp value={m.value} className="block font-display text-5xl font-bold text-accent" />
                 <p className="mt-2 text-fg/70">{m.label}</p>
               </Reveal>
             </li>
@@ -102,6 +106,7 @@ export default async function CaseStudy({ params }: PageProps<"/work/[slug]">) {
 
         <Link
           href={`/work/${next.slug}`}
+          data-cursor="Next"
           className="group mt-24 flex items-end justify-between gap-6 border-t border-line pt-10"
         >
           <span>

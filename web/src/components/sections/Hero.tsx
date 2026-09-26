@@ -5,6 +5,7 @@ import { useRef, useSyncExternalStore, type ReactNode } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { site } from "@/content/site";
 import { getIntroDone, subscribeIntro } from "@/lib/scene-store";
+import { Magnetic } from "@/components/motion/Magnetic";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -91,18 +92,20 @@ export function Hero() {
         </Fade>
 
         <Fade play={play} delay={0.45} className="mt-10 flex flex-wrap items-center gap-3">
-          <Link
-            href="/#work"
-            className="group inline-flex h-12 items-center gap-2 rounded-full bg-fg px-6 text-sm font-medium text-canvas transition-transform duration-300 ease-out-expo hover:scale-[1.03]"
-          >
-            See selected work
-            <span aria-hidden className="transition-transform duration-300 group-hover:translate-y-0.5">
-              ↓
-            </span>
-          </Link>
+          <Magnetic>
+            <Link
+              href="/#work"
+              className="group inline-flex h-14 items-center gap-2 rounded-full bg-fg px-7 text-sm font-medium text-canvas transition-colors duration-300 hover:bg-accent"
+            >
+              See selected work
+              <span aria-hidden className="transition-transform duration-300 group-hover:translate-y-0.5">
+                ↓
+              </span>
+            </Link>
+          </Magnetic>
           <Link
             href="/#contact"
-            className="glass inline-flex h-12 items-center rounded-full px-6 text-sm font-medium transition-colors hover:bg-black/5"
+            className="glass inline-flex h-14 items-center rounded-full px-7 text-sm font-medium transition-colors hover:bg-black/5"
           >
             Get in touch
           </Link>
