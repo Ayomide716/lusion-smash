@@ -136,8 +136,8 @@ html[data-theme="dark"] {
     var(--color-canvas);
 }
 
-/* Intro curtain. It lifts when the scene is ready; the CSS delay is a fail-safe so
-   content is never stuck behind it if JavaScript or the GPU scene fails. */
+/* Intro curtain. It fades once the counter reaches 100; the CSS delay is a
+   fail-safe so content is never stuck behind it if JavaScript never runs. */
 .intro-curtain {
   animation: curtain-out 0.9s var(--ease-out-expo) 6s forwards;
 }
@@ -150,8 +150,7 @@ html[data-theme="dark"] {
   animation: intro-bar 2.4s var(--ease-out-expo) forwards;
 }
 
-/* The curtain fades rather than slides: the particles are waiting behind it in
-   the shape of the "100" counter, and fly out of it as it clears. */
+/* The curtain fades rather than slides, revealing the particles gathering behind it. */
 @keyframes curtain-out {
   to {
     opacity: 0;

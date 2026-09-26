@@ -79,14 +79,18 @@ export const projects: Project[] = [
       },
     ],
     outcome:
-      "A working two-sided marketplace with real payments, escrow and payouts, hardened so that the rules the UI shows are the rules the database enforces.",
+      "Live at naijahustle.com: a two-sided marketplace with real payments, escrow and payouts, hardened so that the rules the UI shows are the rules the database enforces.",
     image: {
       src: "/work/naijahustle.jpg",
       alt: "NaijaHustle home screen on a phone: \"Turn Your Skills Into Wealth\" with Start Earning Today and Post a Job buttons",
       width: 1080,
       height: 1788,
     },
-    links: [{ label: "View code on GitHub", href: "https://github.com/Ayomide716/cloud-naija-growth" }],
+    live: "https://naijahustle.com",
+    links: [
+      { label: "Visit naijahustle.com", href: "https://naijahustle.com" },
+      { label: "View code on GitHub", href: "https://github.com/Ayomide716/cloud-naija-growth" },
+    ],
   },
   {
     slug: "zwcc-business-grant",
