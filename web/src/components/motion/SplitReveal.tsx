@@ -11,7 +11,8 @@ export function SplitReveal({ text, className, delay = 0 }: { text: string; clas
   const reduce = useReducedMotion();
   const words = text.split(" ");
   return (
-    <span aria-label={text} role="text" className={className}>
+    <span className={className}>
+      <span className="sr-only">{text}</span>
       {words.map((word, i) => (
         <span key={i} aria-hidden className="inline-block overflow-hidden pb-[0.1em] align-bottom">
           <motion.span

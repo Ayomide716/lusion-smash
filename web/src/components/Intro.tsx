@@ -6,8 +6,15 @@ import { site } from "@/content/site";
 
 // All times are measured from navigation start (performance.now()), the same
 // clock the CSS fail-safe runs on, so the two can't drift apart on slow phones.
-const MIN_MS = 1100; // always show the counter at least this long
-const FULL_MS = 2800; // counter reaches 100 by here even if the scene isn't ready
+const MIN_MS = 900; // always show the counter at least this long
+const FULL_MS = 2400; // counter reaches 100 by here even if the scene isn't ready
+
+/**
+ * Runs in <head> before first paint: the curtain is only for a first visit to
+ * the home page in a session. Deep links (a shared case study, the résumé) and
+ * reloads open straight onto the content.
+ */
+export const introInitScript = `(function(){try{var d=document.documentElement;if(location.pathname!=="/"||sessionStorage.getItem("intro-seen")){d.classList.add("no-intro")}else{sessionStorage.setItem("intro-seen","1")}}catch(e){}})()`;
 
 /**
  * Full-screen curtain shown while the GPU scene boots, so the first thing people
@@ -22,6 +29,10 @@ export function Intro() {
   const counter = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
+    if (document.documentElement.classList.contains("no-intro")) {
+      markIntroDone();
+      return;
+    }
     let ready = false;
     let shown = 0;
     let frame = 0;

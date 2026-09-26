@@ -64,7 +64,8 @@ export function ReactiveText({ text }: { text: string }) {
   }, [text]);
 
   return (
-    <span aria-label={text} role="text">
+    <span>
+      <span className="sr-only">{text}</span>
       {[...text].map((ch, i) => (
         <span
           key={i}

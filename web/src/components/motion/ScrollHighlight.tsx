@@ -37,7 +37,8 @@ export function ScrollHighlight({ text, className }: { text: string; className?:
   }
 
   return (
-    <p ref={ref} aria-label={plain} className={className}>
+    <p ref={ref} className={className}>
+      <span className="sr-only">{plain}</span>
       <span aria-hidden>
         {words.map((w, i) => (
           <Word

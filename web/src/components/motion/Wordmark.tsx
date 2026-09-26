@@ -7,7 +7,8 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
 export function Wordmark({ text }: { text: string }) {
   const reduce = useReducedMotion();
   return (
-    <p aria-label={text} className="flex overflow-hidden font-display text-[9vw] leading-[0.85] font-bold tracking-[-0.06em] whitespace-nowrap select-none">
+    <p className="flex overflow-hidden font-display text-[9vw] leading-[0.85] font-bold tracking-[-0.06em] whitespace-nowrap select-none">
+      <span className="sr-only">{text}</span>
       {[...text].map((ch, i) => (
         <motion.span
           key={i}

@@ -146,6 +146,9 @@ html[data-theme="dark"] {
 .intro-curtain[data-done="true"] {
   animation: curtain-out-now 0.9s var(--ease-out-expo) forwards;
 }
+html.no-intro .intro-curtain {
+  display: none;
+}
 .intro-bar {
   animation: intro-bar 2.4s var(--ease-out-expo) forwards;
 }

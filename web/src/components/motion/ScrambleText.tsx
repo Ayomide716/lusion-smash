@@ -38,7 +38,8 @@ export function ScrambleText({ text, className, duration = 700 }: { text: string
   }, [inView, reduce, text, duration]);
 
   return (
-    <span aria-label={text} className={className}>
+    <span className={className}>
+      <span className="sr-only">{text}</span>
       <span ref={ref} aria-hidden>
         {text}
       </span>

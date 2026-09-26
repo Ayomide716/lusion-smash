@@ -4,7 +4,7 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { SceneRoot } from "@/components/scene/SceneRoot";
 import { SmoothScroll } from "@/components/SmoothScroll";
-import { Intro } from "@/components/Intro";
+import { Intro, introInitScript } from "@/components/Intro";
 import { Cursor } from "@/components/motion/Cursor";
 import { Analytics } from "@vercel/analytics/next";
 import { services, site } from "@/content/site";
@@ -83,6 +83,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         {/* Apply a saved theme before first paint (no flash of the wrong theme). */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: introInitScript }} />
       </head>
       <body className="min-h-dvh">
         <a
@@ -105,7 +106,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main id="main">{children}</main>
         <Footer />
         <Cursor />
-        <Analytics />
+        {/* Vercel serves the analytics script; elsewhere it would 404. */}
+        {process.env.NEXT_PUBLIC_VERCEL_ENV && <Analytics />}
       </body>
     </html>
   );
