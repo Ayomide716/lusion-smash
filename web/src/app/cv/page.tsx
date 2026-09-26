@@ -24,12 +24,12 @@ export default function CV() {
         </header>
 
         <section className="mt-8">
-          <h2 className="font-mono text-xs tracking-widest text-black/50 uppercase">Summary</h2>
+          <h2 className="font-mono text-xs tracking-widest text-black/60 uppercase">Summary</h2>
           <p className="mt-3">{site.pitch}</p>
         </section>
 
         <section className="mt-8">
-          <h2 className="font-mono text-xs tracking-widest text-black/50 uppercase">Experience</h2>
+          <h2 className="font-mono text-xs tracking-widest text-black/60 uppercase">Experience</h2>
           <ul className="mt-4 space-y-5">
             {experience.map((job) => (
               <li key={job.company}>
@@ -37,7 +37,7 @@ export default function CV() {
                   <h3 className="font-semibold">
                     {job.role}, {job.company}
                   </h3>
-                  <span className="font-mono text-xs text-black/50">{job.period}</span>
+                  <span className="font-mono text-xs text-black/60">{job.period}</span>
                 </div>
                 <p className="mt-1 text-black/75">{job.summary}</p>
               </li>
@@ -46,7 +46,7 @@ export default function CV() {
         </section>
 
         <section className="mt-8">
-          <h2 className="font-mono text-xs tracking-widest text-black/50 uppercase">Selected projects</h2>
+          <h2 className="font-mono text-xs tracking-widest text-black/60 uppercase">Selected projects</h2>
           <ul className="mt-4 space-y-3">
             {projects.map((p) => (
               <li key={p.slug}>
@@ -60,7 +60,7 @@ export default function CV() {
         </section>
 
         <section className="mt-8">
-          <h2 className="font-mono text-xs tracking-widest text-black/50 uppercase">Skills</h2>
+          <h2 className="font-mono text-xs tracking-widest text-black/60 uppercase">Skills</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
             {skills.map((s) => (
               <div key={s.group}>

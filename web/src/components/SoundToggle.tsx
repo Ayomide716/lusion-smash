@@ -27,8 +27,6 @@ export function SoundToggle({ className }: { className?: string }) {
   return (
     <button
       type="button"
-      aria-pressed={on}
-      aria-label={on ? "Turn sound off" : "Turn sound on"}
       data-cursor={on ? "Mute" : "Sound"}
       onClick={() => setSound(!on)}
       className={`flex h-10 items-center gap-2 rounded-full px-3 text-xs font-medium text-fg/70 transition-colors hover:bg-fg/5 hover:text-fg ${className ?? ""}`}
@@ -45,7 +43,8 @@ export function SoundToggle({ className }: { className?: string }) {
           />
         ))}
       </span>
-      <span className="hidden lg:inline">{on ? "Sound on" : "Sound off"}</span>
+      {/* The visible label is the button's name; below lg it's kept for screen readers only. */}
+      <span className="sr-only lg:not-sr-only">{on ? "Sound on" : "Sound off"}</span>
     </button>
   );
 }
