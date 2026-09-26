@@ -21,7 +21,7 @@ export function Contact() {
           <SectionHeading id="contact-title" eyebrow="Contact" title="Have a product to build?" italic="Let's talk." inverse />
           <Reveal delay={0.1}>
             <p className="mt-6 max-w-md text-lg opacity-80">
-              I&apos;m currently looking for full-time product engineering roles. The fastest way to reach me is this
+              I&apos;m available for freelance projects and open to full-time roles. The fastest way to reach me is this
               form, or email.
             </p>
             <dl className="mt-10 space-y-5 text-sm">

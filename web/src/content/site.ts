@@ -1,5 +1,5 @@
-// Site content. Projects are real (written from each repository's code and
-// README). Still PLACEHOLDER: experience entries, LinkedIn/X links, location.
+// Site content. Projects and experience are real (projects written from each
+// repository's code and README). Check: location, availability wording.
 
 export const site = {
   name: "Famoyegun Ayomide",
@@ -10,11 +10,9 @@ export const site = {
   location: "Lagos, Nigeria · Remote",
   email: "ayomidefamoyegun1@gmail.com",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  availability: "Open to full-time roles",
+  availability: "Available for freelance projects",
   socials: [
     { label: "GitHub", href: "https://github.com/Ayomide716" },
-    { label: "LinkedIn", href: "https://www.linkedin.com/" },
-    { label: "X", href: "https://x.com/" },
   ],
 } as const;
 
@@ -183,25 +181,11 @@ export const projects: Project[] = [
 
 export const experience = [
   {
-    company: "Acme Labs",
-    role: "Senior Full-stack Engineer",
-    period: "2024 — Present",
+    company: "Independent",
+    role: "Freelance Full-stack Developer",
+    period: "2026 — Present",
     summary:
-      "Leading a product squad of five. Own the web platform end to end, from Postgres schema design to the design system.",
-  },
-  {
-    company: "Northwind",
-    role: "Full-stack Engineer",
-    period: "2022 — 2024",
-    summary:
-      "Built real-time features and the analytics pipeline. Cut page load times by 55% across the core app.",
-  },
-  {
-    company: "Globex Studio",
-    role: "Frontend Engineer",
-    period: "2020 — 2022",
-    summary:
-      "Shipped marketing sites and web apps for clients in fintech and retail. Introduced TypeScript and automated testing.",
+      "Designing and shipping web and mobile products end to end, from the database and payments to the interface: a freelance marketplace with escrow payments (NaijaHustle), a grant-management app for Zion World Christian Center, a sales and inventory dashboard for Larshaun Party Packs, and a marketing site for book marketer Amelia Hart.",
   },
 ];
 
