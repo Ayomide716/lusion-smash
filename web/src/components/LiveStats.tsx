@@ -17,7 +17,7 @@ export function LiveStats() {
   return (
     <dl className="glass grid grid-cols-2 gap-px overflow-hidden rounded-3xl bg-line sm:grid-cols-3 lg:grid-cols-5" aria-live="off">
       {items.map((i) => (
-        <div key={i.label} className="bg-ink-2/90 p-5 md:p-6">
+        <div key={i.label} className="bg-white/85 p-5 md:p-6">
           <dt className="font-mono text-[11px] tracking-widest text-muted uppercase">{i.label}</dt>
           <dd className="mt-2 text-xl font-semibold tabular-nums md:text-2xl">{i.value}</dd>
         </div>

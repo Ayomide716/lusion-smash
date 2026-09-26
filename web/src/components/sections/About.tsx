@@ -1,5 +1,6 @@
 import { principles, site, skills } from "@/content/site";
 import { Reveal } from "@/components/Reveal";
+import { Parallax, ParallaxWord } from "@/components/Parallax";
 import { SectionHeading } from "@/components/SectionHeading";
 
 export function About() {
@@ -10,8 +11,9 @@ export function About() {
       data-shape-x="-0.5"
       data-shape-scale="0.9"
       aria-labelledby="about-title"
-      className="container-page scroll-mt-24 py-24 md:py-36"
+      className="container-page relative isolate scroll-mt-24 overflow-x-clip py-24 md:py-36"
     >
+      <ParallaxWord text="About" className="top-16 -left-[3vw]" />
       <div className="grid gap-14 md:grid-cols-12">
         <div className="md:col-span-7 md:col-start-6">
           <SectionHeading id="about-title" eyebrow="About" title="Engineer by trade," italic="product person by habit." />
@@ -33,11 +35,13 @@ export function About() {
       <ul className="mt-20 grid gap-5 md:grid-cols-3">
         {principles.map((p, i) => (
           <li key={p.title}>
+            <Parallax speed={0.06 + i * 0.07} className="h-full">
             <Reveal delay={i * 0.08} className="glass h-full rounded-3xl p-6 md:p-8">
               <span className="font-mono text-xs text-accent">0{i + 1}</span>
               <h3 className="mt-6 text-xl font-semibold tracking-tight">{p.title}</h3>
               <p className="mt-3 text-fg/70">{p.body}</p>
             </Reveal>
+            </Parallax>
           </li>
         ))}
       </ul>

@@ -34,6 +34,28 @@ export function setStats(next: Partial<SceneStats>) {
   listeners.forEach((l) => l());
 }
 
+// Intro curtain: lifted once the scene has drawn (or after a timeout). The hero
+// waits for it so its entrance isn't hidden behind the curtain.
+let introDone = false;
+const introListeners = new Set<Listener>();
+
+export function getIntroDone() {
+  return introDone;
+}
+
+export function markIntroDone() {
+  if (introDone) return;
+  introDone = true;
+  introListeners.forEach((l) => l());
+}
+
+export function subscribeIntro(listener: Listener) {
+  introListeners.add(listener);
+  return () => {
+    introListeners.delete(listener);
+  };
+}
+
 export function subscribeStats(listener: Listener) {
   listeners.add(listener);
   return () => {

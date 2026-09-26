@@ -1,4 +1,5 @@
 import { Reveal } from "@/components/Reveal";
+import { Parallax } from "@/components/Parallax";
 
 export function SectionHeading({
   id,
@@ -12,17 +13,19 @@ export function SectionHeading({
   italic?: string;
 }) {
   return (
+    <Parallax speed={0.12}>
     <Reveal>
       <p className="font-mono text-xs tracking-widest text-accent uppercase">{eyebrow}</p>
-      <h2 id={id} className="mt-4 max-w-3xl text-4xl leading-[1.02] font-semibold tracking-[-0.03em] text-balance md:text-6xl">
+      <h2 id={id} className="mt-4 max-w-3xl text-4xl leading-[1.02] font-bold tracking-[-0.04em] text-balance md:text-6xl">
         {title}
         {italic && (
           <>
             {" "}
-            <span className="font-serif font-normal italic text-fg/80">{italic}</span>
+            <span className="text-accent">{italic}</span>
           </>
         )}
       </h2>
     </Reveal>
+    </Parallax>
   );
 }

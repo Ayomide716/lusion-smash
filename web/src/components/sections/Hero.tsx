@@ -1,57 +1,118 @@
+"use client";
+
 import Link from "next/link";
+import { useRef, useSyncExternalStore, type ReactNode } from "react";
+import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { site } from "@/content/site";
-import { Reveal } from "@/components/Reveal";
+import { getIntroDone, subscribeIntro } from "@/lib/scene-store";
+
+const EASE = [0.16, 1, 0.3, 1] as const;
+
+/** Slides a line up from behind a mask once the intro curtain has lifted. */
+function Line({ children, delay, play }: { children: ReactNode; delay: number; play: boolean }) {
+  return (
+    <span className="block overflow-hidden pb-[0.08em]">
+      <motion.span
+        data-reveal
+        className="block"
+        initial={{ y: "110%" }}
+        animate={play ? { y: "0%" } : undefined}
+        transition={{ duration: 1.1, delay, ease: EASE }}
+      >
+        {children}
+      </motion.span>
+    </span>
+  );
+}
+
+function Fade({ children, delay, play, className }: { children: ReactNode; delay: number; play: boolean; className?: string }) {
+  return (
+    <motion.div
+      data-reveal
+      className={className}
+      initial={{ opacity: 0, y: 16 }}
+      animate={play ? { opacity: 1, y: 0 } : undefined}
+      transition={{ duration: 0.9, delay, ease: EASE }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export function Hero() {
+  const introDone = useSyncExternalStore(subscribeIntro, getIntroDone, () => false);
+  const reduce = useReducedMotion();
+  const play = introDone || !!reduce;
+
+  // Parallax exit: the hero drifts up and fades as you scroll past it.
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], [0, -140]);
+  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const [first, ...rest] = site.name.split(" ");
+
   return (
     <section
+      ref={ref}
       data-shape="initials"
       data-shape-x="0.38"
       data-shape-y="0.22"
       data-shape-scale="0.95"
       aria-labelledby="hero-title"
-      className="container-page relative flex min-h-dvh flex-col justify-end pb-16 pt-32 md:pb-24"
+      className="relative flex min-h-dvh flex-col justify-end"
     >
-      <Reveal>
-        <p className="glass mb-8 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs text-fg/80">
-          <span className="relative flex size-2">
-            <span className="absolute inset-0 animate-ping rounded-full bg-accent/70 motion-reduce:hidden" />
-            <span className="relative size-2 rounded-full bg-accent" />
-          </span>
-          {site.availability}
-        </p>
-      </Reveal>
+      <motion.div style={reduce ? undefined : { y, opacity }} className="container-page pt-32 pb-16 md:pb-24">
+        <Fade play={play} delay={0}>
+          <p className="glass mb-8 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium text-fg/80">
+            <span className="relative flex size-2">
+              <span className="absolute inset-0 animate-ping rounded-full bg-accent/60 motion-reduce:hidden" />
+              <span className="relative size-2 rounded-full bg-accent" />
+            </span>
+            {site.availability}
+          </p>
+        </Fade>
 
-      <Reveal delay={0.08}>
-        <h1 id="hero-title" className="max-w-4xl text-5xl leading-[0.95] font-semibold tracking-[-0.04em] sm:text-7xl lg:text-8xl">
-          {site.name}
+        <h1
+          id="hero-title"
+          className="max-w-5xl text-[13vw] leading-[0.9] font-bold tracking-[-0.05em] sm:text-7xl lg:text-[7.5rem]"
+        >
+          <Line play={play} delay={0.05}>
+            {first}
+          </Line>
+          <Line play={play} delay={0.15}>
+            <span className="text-accent">{rest.join(" ")}</span>
+          </Line>
         </h1>
-      </Reveal>
 
-      <Reveal delay={0.16}>
-        <p className="mt-6 max-w-xl text-lg text-balance text-fg/75 md:text-xl">
-          <span className="font-serif text-2xl text-fg italic md:text-3xl">{site.role}.</span>{" "}
-          {site.pitch}
-        </p>
-      </Reveal>
+        <Fade play={play} delay={0.35}>
+          <p className="mt-8 max-w-xl text-lg text-balance text-fg/75 md:text-xl">
+            <strong className="font-display font-semibold text-fg">{site.role}.</strong> {site.pitch}
+          </p>
+        </Fade>
 
-      <Reveal delay={0.24} className="mt-10 flex flex-wrap items-center gap-3">
-        <Link
-          href="/#work"
-          className="group inline-flex h-12 items-center gap-2 rounded-full bg-fg px-6 text-sm font-medium text-ink transition-transform duration-300 ease-out-expo hover:scale-[1.03]"
-        >
-          See selected work
-          <span aria-hidden className="transition-transform duration-300 group-hover:translate-y-0.5">↓</span>
-        </Link>
-        <Link
-          href="/#contact"
-          className="glass inline-flex h-12 items-center rounded-full px-6 text-sm font-medium transition-colors hover:bg-white/10"
-        >
-          Get in touch
-        </Link>
-      </Reveal>
+        <Fade play={play} delay={0.45} className="mt-10 flex flex-wrap items-center gap-3">
+          <Link
+            href="/#work"
+            className="group inline-flex h-12 items-center gap-2 rounded-full bg-fg px-6 text-sm font-medium text-canvas transition-transform duration-300 ease-out-expo hover:scale-[1.03]"
+          >
+            See selected work
+            <span aria-hidden className="transition-transform duration-300 group-hover:translate-y-0.5">
+              ↓
+            </span>
+          </Link>
+          <Link
+            href="/#contact"
+            className="glass inline-flex h-12 items-center rounded-full px-6 text-sm font-medium transition-colors hover:bg-black/5"
+          >
+            Get in touch
+          </Link>
+        </Fade>
+      </motion.div>
 
-      <p aria-hidden className="absolute right-5 bottom-8 hidden font-mono text-[11px] tracking-widest text-muted uppercase md:right-10 md:block">
+      <p
+        aria-hidden
+        className="absolute right-5 bottom-8 hidden font-mono text-[11px] tracking-widest text-muted uppercase md:right-10 md:block"
+      >
         Move your cursor · Scroll to morph
       </p>
     </section>

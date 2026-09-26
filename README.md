@@ -1,6 +1,6 @@
 # Famoyegun Ayomide — Portfolio
 
-A full-stack product engineer's portfolio with a live GPU particle field behind the content. Particles form
+A full-stack product engineer's portfolio: a white, pink-accented site with a live GPU particle field behind the content. Particles form
 my initials, then morph into a new shape for each section as you scroll, and swirl around the cursor.
 
 ## Structure
@@ -26,12 +26,16 @@ Planned: `services/mood` (Python FastAPI), `services/presence` (Go WebSockets).
   imports and no JS glue; `web/src/lib/engine.ts` reads the field through a zero-copy view of wasm memory and the
   compute kernel samples it as a texture, so particles are carried by the flow behind your cursor.
 - **Post-processing** (`PostFX.tsx`): bloom → chromatic aberration → vignette + grain, written in TSL.
-- **Fallbacks**: WebGPU is used where available; if it fails to start or loses its device, the scene remounts on
-  the WebGL 2 backend, and only if that fails does a static gradient remain. If the `.wasm` can't load, particles
+- **Renderers & fallbacks**: WebGL 2 is the default; WebGPU is opt-in with `?renderer=webgpu` (it falls back to
+  WebGL 2 if it fails to start, loses its device or reports a validation error). Software rasterisers and devices
+  that can't hold 20 fps get an animated CSS backdrop instead of a frozen scene. If the `.wasm` can't load, particles
   still run without the fluid. Reduced-motion users get a calmer version.
-- **Budget**: 131k particles on desktop WebGPU, 49k on mobile/low-core devices, 16–32k on WebGL 2.
+- **Budget**: WebGL 2 — 65k particles on desktop, 24k on mobile/low-core; WebGPU — 131k / 49k.
 
-Debug query params: `?renderer=webgl` forces the WebGL 2 backend, `?fx=0` disables post-processing.
+Debug query params: `?renderer=webgl|webgpu` picks a backend (and disables the slow-device watchdog), `?fx=0` disables post-processing.
+
+Design system: generated with the ui-ux-pro-max skill (`.claude/skills/ui-ux-pro-max`) — creative-pink-on-neutral palette,
+Space Grotesk + Archivo, glass nav, parallax that switches off under reduced motion.
 
 ## Develop
 

@@ -24,6 +24,9 @@ export type Engine = {
   stepMs: number;
 };
 
+/** Fluid grid size per side; must match `N` in engine/cpp/fluid.cpp. */
+export const FIELD_SIZE = 80;
+
 export const STATE = {
   POINTER_X: 0,
   POINTER_Y: 1,
@@ -51,6 +54,7 @@ async function instantiate(url: string): Promise<Engine> {
       : await WebAssembly.instantiate(await (await response).arrayBuffer(), {});
   const wasm = instance.exports as unknown as EngineExports;
   const size = wasm.engine_init();
+  if (size !== FIELD_SIZE) throw new Error(`engine grid is ${size}, expected ${FIELD_SIZE}; rebuild the site or engine`);
 
   const views = () => ({
     field: new Uint16Array(wasm.memory.buffer, wasm.engine_field_ptr(), wasm.engine_field_len()),

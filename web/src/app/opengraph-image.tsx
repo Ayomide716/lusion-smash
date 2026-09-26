@@ -16,12 +16,12 @@ export default function OpengraphImage() {
           flexDirection: "column",
           justifyContent: "flex-end",
           padding: 80,
-          color: "#e8eaf0",
+          color: "#0a0a0b",
           background:
-            "radial-gradient(60% 60% at 75% 30%, rgba(122,240,214,0.35), transparent 70%), radial-gradient(50% 50% at 20% 80%, rgba(155,110,255,0.3), transparent 70%), #05060a",
+            "radial-gradient(55% 60% at 78% 30%, rgba(236,72,153,0.35), transparent 70%), radial-gradient(45% 50% at 15% 85%, rgba(249,168,212,0.45), transparent 70%), #ffffff",
         }}
       >
-        <div style={{ fontSize: 28, color: "#7af0d6", letterSpacing: 4, textTransform: "uppercase" }}>{site.role}</div>
+        <div style={{ fontSize: 28, color: "#db2777", letterSpacing: 4, textTransform: "uppercase" }}>{site.role}</div>
         <div style={{ fontSize: 96, fontWeight: 700, letterSpacing: -4, marginTop: 16 }}>{site.name}</div>
         <div style={{ fontSize: 32, opacity: 0.75, marginTop: 20, maxWidth: 900 }}>{site.pitch}</div>
       </div>

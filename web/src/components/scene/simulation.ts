@@ -23,7 +23,7 @@ import {
 } from "three/tsl";
 import { buildShapes, SHAPES, type ShapeName } from "./shapes";
 import { sceneState, setStats } from "@/lib/scene-store";
-import { STATE, type Engine } from "@/lib/engine";
+import { FIELD_SIZE, STATE, type Engine } from "@/lib/engine";
 
 export type SimulationOptions = {
   count: number;
@@ -114,7 +114,15 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
   // Velocity field from the WebAssembly fluid solver (RG half floats, uv/s),
   // uploaded each frame straight from a view over wasm memory. Starts empty
   // and stays harmlessly zero if the engine can't load.
-  const fieldTex = new THREE.DataTexture(new Uint16Array(2), 1, 1, THREE.RGFormat, THREE.HalfFloatType);
+  // Allocated at the solver's size up front: three.js updates existing textures
+  // in place, so growing it later would overflow the GPU allocation.
+  const fieldTex = new THREE.DataTexture(
+    new Uint16Array(FIELD_SIZE * FIELD_SIZE * 2),
+    FIELD_SIZE,
+    FIELD_SIZE,
+    THREE.RGFormat,
+    THREE.HalfFloatType,
+  );
   fieldTex.magFilter = THREE.LinearFilter;
   fieldTex.minFilter = THREE.LinearFilter;
   fieldTex.needsUpdate = true;
@@ -213,34 +221,32 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     pos.assign(vec4(p.add(v.mul(u.dt)), 1));
   })().compute(count);
 
-  // Iridescent colour: a thin-film style cosine palette driven by speed,
-  // height and a per-particle phase, tinted towards the site accent.
+  // Pink on white: normal alpha blending (additive light vanishes on a white
+  // page). Slow particles sit between blush and hot pink; speed pushes them to
+  // deep rose, with a slow magenta shimmer travelling through the field.
   const material = new THREE.SpriteNodeMaterial({
     transparent: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    blending: THREE.NormalBlending,
   });
   const vel = velocities.toAttribute().xyz;
   const posAttr = positions.toAttribute().xyz;
   const seed = hash(instanceIndex);
   const speed = vel.length();
-  const phase = seed
-    .mul(0.35)
-    .add(speed.mul(0.18))
-    .add(posAttr.y.mul(0.12))
-    .add(posAttr.z.mul(0.2))
-    .add(time.mul(0.025));
-  const palette = vec3(0.5, 0.5, 0.55).add(
-    vec3(0.5, 0.45, 0.45).mul(phase.add(vec3(0.52, 0.34, 0.16)).mul(Math.PI * 2).cos()),
-  );
-  const accent = vec3(0.478, 0.941, 0.839);
-  const tint = mix(palette, accent, smoothstep(0.9, 0.0, speed).mul(0.35));
-  const disc = uv().sub(0.5).length().mul(2).oneMinus().saturate().pow(1.8);
-  const heat = speed.mul(0.3).add(u.energy.mul(0.5)).add(1).min(2);
+  // Linear-space versions of #f9a8d4, #ec4899, #be185d and #c026d3.
+  const blush = vec3(0.947, 0.392, 0.658);
+  const pink = vec3(0.838, 0.064, 0.319);
+  const rose = vec3(0.515, 0.009, 0.11);
+  const magenta = vec3(0.527, 0.019, 0.657);
+  const base = mix(pink, blush, seed.mul(0.55).add(posAttr.y.mul(0.08)).saturate());
+  const fast = mix(base, rose, speed.mul(0.35).add(u.energy.mul(0.3)).saturate());
+  const shimmer = seed.add(posAttr.x.mul(0.15)).add(time.mul(0.05)).mul(Math.PI * 2).sin().mul(0.5).add(0.5).pow(3);
+  const tint = mix(fast, magenta, shimmer.mul(0.35));
+  const disc = uv().sub(0.5).length().mul(2).oneMinus().saturate().pow(1.25);
 
   material.positionNode = posAttr;
-  material.colorNode = tint.mul(heat);
-  material.opacityNode = disc.mul(0.38);
+  material.colorNode = tint;
+  material.opacityNode = disc.mul(0.85);
   material.scaleNode = u.size.mul(seed.mul(0.9).add(0.45)).mul(speed.mul(0.1).add(1).min(1.6));
 
   const sprite = new THREE.Sprite(material);
@@ -317,12 +323,8 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
     engine.frame(delta, ptr.x, ptr.y, ptr.active, aspect);
     nx = engine.state[STATE.POINTER_X];
     ny = engine.state[STATE.POINTER_Y];
-    const image = sim.fieldTex.image as { data: Uint16Array; width: number; height: number };
-    if (image.width !== engine.size) {
-      sim.fieldTex.image = { data: engine.field, width: engine.size, height: engine.size };
-    } else {
-      image.data = engine.field;
-    }
+    // Point the texture at the view over wasm memory: the upload reads straight from it.
+    (sim.fieldTex.image as { data: Uint16Array }).data = engine.field;
     sim.fieldTex.needsUpdate = true;
   }
 

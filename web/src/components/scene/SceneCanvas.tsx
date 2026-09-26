@@ -14,12 +14,13 @@ type Budget = { count: number; size: number; quality: "high" | "low" };
 function pickBudget(isWebGPU: boolean): Budget {
   const coarse = window.matchMedia("(pointer: coarse)").matches;
   const cores = navigator.hardwareConcurrency ?? 4;
-  if (!isWebGPU) return { count: coarse ? 16_384 : 32_768, size: 0.022, quality: "low" };
+  if (!isWebGPU) return coarse || cores <= 4 ? { count: 24_576, size: 0.024, quality: "low" } : { count: 65_536, size: 0.019, quality: "high" };
   if (coarse || cores <= 4) return { count: 49_152, size: 0.018, quality: "low" };
   return { count: 131_072, size: 0.013, quality: "high" };
 }
 
-type Backend = "auto" | "webgl" | "static";
+/** "webgpu" is opt-in (?renderer=webgpu) until verified on real hardware; WebGL 2 is the default. */
+type Backend = "webgpu" | "webgl" | "static";
 
 /**
  * three.js sets `swizzle: "rgba"` on every texture view. Chrome builds that
@@ -45,12 +46,62 @@ function patchIdentitySwizzle() {
 
 function initialBackend(): Backend {
   const forced = new URLSearchParams(window.location.search).get("renderer");
-  if (forced === "webgl") return "webgl";
-  return "gpu" in navigator ? "auto" : "webgl";
+  if (forced === "webgpu" && "gpu" in navigator) return "webgpu";
+  return "webgl";
 }
 
-function Scene({ reducedMotion, onReady }: { reducedMotion: boolean; onReady: () => void }) {
+/** Software rasterisers (GPU acceleration off or blocklisted) run the scene at ~1 fps. */
+function isSoftwareRenderer(renderer: THREE.WebGPURenderer) {
+  if (new URLSearchParams(window.location.search).has("renderer")) return false; // explicit choice wins
+  const gl = (renderer.backend as { gl?: WebGL2RenderingContext }).gl;
+  if (!gl) return false;
+  const info = gl.getExtension("WEBGL_debug_renderer_info");
+  const name = String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+  return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
+}
+
+/**
+ * Frame-rate watchdog: after a warm-up, drop to 1× pixel ratio if the scene is
+ * slow, and give up on it (static backdrop) if it's still too slow after that.
+ */
+function useFrameWatchdog(onGiveUp: (reason: string) => void) {
+  const setDpr = useThree((s) => s.setDpr);
+  // An explicit ?renderer= choice (debugging, testing) disables the watchdog.
+  const w = useRef({ frames: 0, elapsed: 0, stage: new URLSearchParams(window.location.search).has("renderer") ? 2 : 0 });
+  useFrame((_, delta) => {
+    const s = w.current;
+    if (s.stage >= 2 || document.hidden) return;
+    s.frames++;
+    s.elapsed += Math.min(delta, 1);
+    if (s.elapsed < 3) return;
+    const fps = s.frames / s.elapsed;
+    s.frames = 0;
+    s.elapsed = 0;
+    if (fps >= 30) {
+      s.stage = 2; // healthy; stop watching
+    } else if (s.stage === 0) {
+      s.stage = 1;
+      setDpr(1);
+    } else if (fps < 20) {
+      s.stage = 2;
+      onGiveUp(`sustained ${fps.toFixed(1)} fps`);
+    } else {
+      s.stage = 2;
+    }
+  });
+}
+
+function Scene({
+  reducedMotion,
+  onReady,
+  onGiveUp,
+}: {
+  reducedMotion: boolean;
+  onReady: () => void;
+  onGiveUp: (reason: string) => void;
+}) {
   const gl = useThree((s) => s.gl) as unknown as THREE.WebGPURenderer;
+  useFrameWatchdog(onGiveUp);
   const [isWebGPU] = useState(() => (gl.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend === true);
   const [budget] = useState(() => pickBudget(isWebGPU));
   const [postFX] = useState(() => new URLSearchParams(window.location.search).get("fx") !== "0");
@@ -99,11 +150,17 @@ export default function SceneCanvas() {
   const [backend, setBackend] = useState<Backend>(initialBackend);
   const [reducedMotion] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
-  // WebGPU failed (init error or lost device) → retry on WebGL 2; WebGL failed → static backdrop.
+  // WebGPU failed (init error, lost device, validation error) → retry on WebGL 2;
+  // WebGL failed or is too slow → animated static backdrop.
   const degrade = useCallback((reason: unknown) => {
     console.warn("[scene] renderer failed, degrading:", reason);
     setReady(false);
-    setBackend((b) => (b === "auto" ? "webgl" : "static"));
+    setBackend((b) => (b === "webgpu" ? "webgl" : "static"));
+  }, []);
+  const giveUp = useCallback((reason: unknown) => {
+    console.warn("[scene] too slow for the particle scene, using static backdrop:", reason);
+    setReady(false);
+    setBackend("static");
   }, []);
 
   useEffect(() => {
@@ -149,10 +206,11 @@ export default function SceneCanvas() {
       <SceneBoundary key={backend} onError={degrade}>
         <Canvas
           key={backend}
+          flat
           dpr={[1, 1.75]}
           camera={{ position: [0, 0, 6], fov: 35, near: 0.1, far: 50 }}
           gl={async (props) => {
-            if (backend === "auto") patchIdentitySwizzle();
+            if (backend === "webgpu") patchIdentitySwizzle();
             const renderer = new THREE.WebGPURenderer({
               canvas: props.canvas as HTMLCanvasElement,
               forceWebGL: backend === "webgl",
@@ -167,14 +225,21 @@ export default function SceneCanvas() {
               throw error;
             }
             renderer.onDeviceLost = (info) => degrade(info.message);
-            renderer.setClearColor(0x05060a, 1);
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.05;
+            const device = (renderer.backend as { device?: GPUDevice }).device;
+            device?.addEventListener("uncapturederror", (e) => degrade((e as GPUUncapturedErrorEvent).error.message));
+            if (isSoftwareRenderer(renderer)) {
+              // Throwing here lands in SceneBoundary → static backdrop.
+              giveUp("software renderer");
+              throw new Error("software renderer");
+            }
+            // White page: no tone mapping so the clear colour stays exactly #fff.
+            renderer.setClearColor(0xffffff, 1);
+            renderer.toneMapping = THREE.NoToneMapping;
             return renderer as unknown as WebGLRenderer;
           }}
           onCreated={(state) => state.gl.domElement.setAttribute("tabindex", "-1")}
         >
-          <Scene reducedMotion={reducedMotion} onReady={() => setReady(true)} />
+          <Scene reducedMotion={reducedMotion} onReady={() => setReady(true)} onGiveUp={giveUp} />
         </Canvas>
       </SceneBoundary>
     </div>

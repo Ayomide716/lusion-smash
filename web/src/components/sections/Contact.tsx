@@ -1,6 +1,7 @@
 import { site } from "@/content/site";
 import { ContactForm } from "@/components/ContactForm";
 import { Reveal } from "@/components/Reveal";
+import { ParallaxWord } from "@/components/Parallax";
 import { SectionHeading } from "@/components/SectionHeading";
 
 export function Contact() {
@@ -10,8 +11,9 @@ export function Contact() {
       data-shape="galaxy"
       data-shape-scale="1.15"
       aria-labelledby="contact-title"
-      className="container-page scroll-mt-24 py-24 md:py-36"
+      className="container-page relative isolate scroll-mt-24 overflow-x-clip py-24 md:py-36"
     >
+      <ParallaxWord text="Hello" className="-bottom-10 -left-[2vw]" />
       <div className="grid gap-12 lg:grid-cols-2">
         <div>
           <SectionHeading id="contact-title" eyebrow="Contact" title="Have a product to build?" italic="Let's talk." />

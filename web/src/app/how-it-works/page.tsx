@@ -9,16 +9,16 @@ export const metadata: Metadata = {
 
 const layers = [
   {
-    lang: "WGSL via TSL",
+    lang: "TSL → GLSL / WGSL",
     status: "Live",
     role: "GPU simulation",
-    body: "Every particle is simulated in a compute shader: spring forces towards the current shape, curl-noise turbulence and cursor swirl. Nothing about particle motion runs on the CPU.",
+    body: "Every particle is simulated in a GPU compute kernel: spring forces towards the current shape, curl-noise turbulence, cursor swirl and the fluid field. It runs as GLSL on WebGL 2 by default and as WGSL on WebGPU (?renderer=webgpu).",
   },
   {
     lang: "TSL → WGSL / GLSL",
     status: "Live",
     role: "Materials and post-processing",
-    body: "The iridescent particle material and the bloom, chromatic aberration, vignette and grain chain are written once in TSL. It compiles to WGSL on WebGPU and GLSL on the WebGL 2 fallback.",
+    body: "The pink particle material and the lens-fringe and grain pass are written once in TSL, which compiles to GLSL or WGSL depending on the renderer.",
   },
   {
     lang: "TypeScript",
@@ -65,7 +65,7 @@ export default function HowItWorks() {
         <Reveal>
           <p className="font-mono text-xs tracking-widest text-accent uppercase">How this site works</p>
           <h1 className="mt-4 max-w-4xl text-5xl leading-[1] font-semibold tracking-[-0.04em] text-balance md:text-7xl">
-            Every language here <span className="font-serif font-normal italic text-fg/80">earns its place.</span>
+            Every language here <span className="text-accent">earns its place.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-fg/70">
             Each layer uses the language best suited to its job, and covers the weaknesses of the others. These numbers
@@ -86,7 +86,7 @@ export default function HowItWorks() {
                   <p className="font-mono text-xs tracking-widest text-muted uppercase">{l.role}</p>
                   <span
                     className={`rounded-full px-2.5 py-1 font-mono text-[11px] ${
-                      l.status === "Live" ? "bg-accent/15 text-accent" : "bg-white/8 text-fg/60"
+                      l.status === "Live" ? "bg-accent/15 text-accent" : "bg-black/5 text-fg/60"
                     }`}
                   >
                     {l.status}

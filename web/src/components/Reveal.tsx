@@ -15,11 +15,12 @@ export function Reveal({
   return (
     <MotionConfig reducedMotion="user">
       <motion.div
+        data-reveal
         className={className}
-        initial={{ opacity: 0, y: 28, filter: "blur(6px)" }}
-        whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-        viewport={{ once: true, margin: "-10% 0px" }}
-        transition={{ duration: 1, delay, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, y: 32 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-8% 0px" }}
+        transition={{ duration: 0.9, delay, ease: [0.16, 1, 0.3, 1] }}
       >
         {children}
       </motion.div>

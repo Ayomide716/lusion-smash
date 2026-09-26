@@ -41,7 +41,7 @@ export function ProjectCard({ project, index }: { project: Project; index: numbe
         </p>
         <span
           aria-hidden
-          className="flex size-11 items-center justify-center rounded-full border border-line transition-all duration-500 ease-out-expo group-hover:rotate-[-45deg] group-hover:border-accent group-hover:bg-accent group-hover:text-accent-ink"
+          className="flex size-11 items-center justify-center rounded-full border border-line transition-all duration-500 ease-out-expo group-hover:rotate-[-45deg] group-hover:border-accent group-hover:bg-accent group-hover:text-on-accent"
         >
           →
         </span>
