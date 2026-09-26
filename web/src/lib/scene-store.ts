@@ -7,13 +7,14 @@ export type SceneStats = {
   backend: "WebGPU" | "WebGL 2" | "Static" | "Starting";
   particles: number;
   fps: number;
+  motion: "Full" | "Reduced" | "—";
 };
 
 type Listener = () => void;
 
 const listeners = new Set<Listener>();
 
-let stats: SceneStats = { backend: "Starting", particles: 0, fps: 0 };
+let stats: SceneStats = { backend: "Starting", particles: 0, fps: 0, motion: "—" };
 
 export const sceneState = {
   /** Pointer in normalised device coordinates (-1..1). */

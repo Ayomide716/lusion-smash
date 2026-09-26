@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, useEffect, useRef, useState, type ReactNode } from "react";
+import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three/webgpu";
 import type { WebGLRenderer } from "three";
@@ -19,34 +19,34 @@ function pickBudget(isWebGPU: boolean): Budget {
   return { count: 131_072, size: 0.013, quality: "high" };
 }
 
+type Backend = "auto" | "webgl" | "static";
+
 /**
- * Decide whether WebGPU is safe to use. Some shipped Chrome builds expose WebGPU
- * but reject descriptors three.js always sends (texture view `swizzle`), which
- * loses the device mid-frame. Probing once up front lets us pick WebGL 2 instead.
+ * three.js sets `swizzle: "rgba"` on every texture view. Chrome builds that
+ * shipped the earlier draft of that WebGPU field reject the string and the
+ * device is lost. "rgba" is the identity swizzle, so dropping it is a no-op
+ * everywhere else.
  */
-async function webgpuUsable(): Promise<boolean> {
-  if (new URLSearchParams(window.location.search).get("renderer") === "webgl") return false;
-  const gpu = (navigator as Navigator & { gpu?: GPU }).gpu;
-  if (!gpu) return false;
-  try {
-    const adapter = await gpu.requestAdapter({ powerPreference: "high-performance" });
-    if (!adapter) return false;
-    const device = await adapter.requestDevice();
-    try {
-      const texture = device.createTexture({
-        size: [1, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING,
-      });
-      texture.createView({ swizzle: "rgba" } as GPUTextureViewDescriptor);
-      texture.destroy();
-      return true;
-    } finally {
-      device.destroy();
+function patchIdentitySwizzle() {
+  if (typeof GPUTexture === "undefined") return;
+  const proto = GPUTexture.prototype as GPUTexture & { __swizzlePatched?: boolean };
+  if (proto.__swizzlePatched) return;
+  const createView = proto.createView;
+  proto.createView = function (this: GPUTexture, descriptor?: GPUTextureViewDescriptor) {
+    if (descriptor && (descriptor as { swizzle?: string }).swizzle === "rgba") {
+      const rest: GPUTextureViewDescriptor & { swizzle?: string } = { ...descriptor };
+      delete rest.swizzle;
+      return createView.call(this, rest);
     }
-  } catch {
-    return false;
-  }
+    return createView.call(this, descriptor);
+  };
+  proto.__swizzlePatched = true;
+}
+
+function initialBackend(): Backend {
+  const forced = new URLSearchParams(window.location.search).get("renderer");
+  if (forced === "webgl") return "webgl";
+  return "gpu" in navigator ? "auto" : "webgl";
 }
 
 function Scene({ reducedMotion, onReady }: { reducedMotion: boolean; onReady: () => void }) {
@@ -81,14 +81,13 @@ function Scene({ reducedMotion, onReady }: { reducedMotion: boolean; onReady: ()
   );
 }
 
-class SceneBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
+class SceneBoundary extends Component<{ children: ReactNode; onError: (error: unknown) => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
   }
   componentDidCatch(error: unknown) {
-    console.warn("[scene] falling back to static backdrop:", error);
-    this.props.onError();
+    this.props.onError(error);
   }
   render() {
     return this.state.failed ? null : this.props.children;
@@ -97,8 +96,15 @@ class SceneBoundary extends Component<{ children: ReactNode; onError: () => void
 
 export default function SceneCanvas() {
   const [ready, setReady] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [backend, setBackend] = useState<Backend>(initialBackend);
   const [reducedMotion] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  // WebGPU failed (init error or lost device) → retry on WebGL 2; WebGL failed → static backdrop.
+  const degrade = useCallback((reason: unknown) => {
+    console.warn("[scene] renderer failed, degrading:", reason);
+    setReady(false);
+    setBackend((b) => (b === "auto" ? "webgl" : "static"));
+  }, []);
 
   useEffect(() => {
     const move = (e: PointerEvent) => {
@@ -125,10 +131,14 @@ export default function SceneCanvas() {
   }, []);
 
   useEffect(() => {
-    if (failed) setStats({ backend: "Static", particles: 0, fps: 0 });
-  }, [failed]);
+    setStats({ motion: reducedMotion ? "Reduced" : "Full" });
+  }, [reducedMotion]);
 
-  if (failed) return null;
+  useEffect(() => {
+    if (backend === "static") setStats({ backend: "Static", particles: 0, fps: 0 });
+  }, [backend]);
+
+  if (backend === "static") return null;
 
   return (
     <div
@@ -136,23 +146,27 @@ export default function SceneCanvas() {
       className="pointer-events-none fixed inset-0 -z-10 print:hidden transition-opacity duration-[1600ms] ease-out"
       style={{ opacity: ready ? 1 : 0 }}
     >
-      <SceneBoundary onError={() => setFailed(true)}>
+      <SceneBoundary key={backend} onError={degrade}>
         <Canvas
+          key={backend}
           dpr={[1, 1.75]}
           camera={{ position: [0, 0, 6], fov: 35, near: 0.1, far: 50 }}
           gl={async (props) => {
+            if (backend === "auto") patchIdentitySwizzle();
             const renderer = new THREE.WebGPURenderer({
               canvas: props.canvas as HTMLCanvasElement,
-              forceWebGL: !(await webgpuUsable()),
+              forceWebGL: backend === "webgl",
               antialias: false,
               alpha: false,
               powerPreference: "high-performance",
             });
-            await renderer.init();
-            renderer.onDeviceLost = (info) => {
-              console.warn("[scene] GPU device lost:", info.message);
-              setFailed(true);
-            };
+            try {
+              await renderer.init();
+            } catch (error) {
+              degrade(error);
+              throw error;
+            }
+            renderer.onDeviceLost = (info) => degrade(info.message);
             renderer.setClearColor(0x05060a, 1);
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.05;

@@ -118,12 +118,12 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     scale: uniform(1),
     offset: uniform(new THREE.Vector3()),
     spring: uniform(reducedMotion ? 5 : 3.2),
-    turbulence: uniform(reducedMotion ? 0.12 : 0.9),
+    turbulence: uniform(reducedMotion ? 0.35 : 0.9),
     damping: uniform(0.92),
     pointer: uniform(new THREE.Vector3(99, 99, 0)),
     pointerVel: uniform(new THREE.Vector2()),
     pointerRadius: uniform(0.55),
-    pointerStrength: uniform(reducedMotion ? 0 : 1),
+    pointerStrength: uniform(reducedMotion ? 0.6 : 1),
     energy: uniform(0),
     size: uniform(size),
   };
@@ -256,7 +256,7 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   const wide = aspect > 1.1;
   const now = frame.elapsed;
   const spinAngle = (shape: number) =>
-    SHAPES[shape] === "initials" ? Math.sin(now * 0.35) * 0.1 : now * SPIN[SHAPES[shape]] * (reducedMotion ? 0.2 : 1);
+    SHAPES[shape] === "initials" ? Math.sin(now * 0.35) * 0.1 : now * SPIN[SHAPES[shape]] * (reducedMotion ? 0.4 : 1);
 
   if (scroll) {
     const { from, to, t } = scroll;
