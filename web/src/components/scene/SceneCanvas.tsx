@@ -8,6 +8,7 @@ import { ParticleField } from "./ParticleField";
 import { PostFX } from "./PostFX";
 import { sceneState, setStats } from "@/lib/scene-store";
 import { site } from "@/content/site";
+import { getTheme, subscribeTheme } from "@/lib/theme";
 
 type Budget = { count: number; size: number; quality: "high" | "low" };
 
@@ -175,6 +176,15 @@ export default function SceneCanvas() {
     const up = (e: PointerEvent) => {
       if (e.pointerType !== "mouse") leave();
     };
+    // Clicks on the page (not on controls or form fields) send a shockwave through the particles.
+    const shock = (e: PointerEvent) => {
+      if ((e.target as Element | null)?.closest("input, textarea, select, label, [role=dialog]")) return;
+      sceneState.shock.x = (e.clientX / window.innerWidth) * 2 - 1;
+      sceneState.shock.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      sceneState.shock.age = 0;
+      sceneState.energy = Math.max(sceneState.energy, 0.8);
+    };
+    window.addEventListener("pointerdown", shock, { passive: true });
     window.addEventListener("pointermove", move, { passive: true });
     window.addEventListener("pointerdown", move, { passive: true });
     window.addEventListener("pointerup", up, { passive: true });
@@ -183,6 +193,7 @@ export default function SceneCanvas() {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerdown", move);
       window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointerdown", shock);
       document.documentElement.removeEventListener("pointerleave", leave);
     };
   }, []);
@@ -232,8 +243,10 @@ export default function SceneCanvas() {
               giveUp("software renderer");
               throw new Error("software renderer");
             }
-            // White page: no tone mapping so the clear colour stays exactly #fff.
-            renderer.setClearColor(0xffffff, 1);
+            // No tone mapping, so the clear colour matches the page exactly.
+            const syncClear = () => renderer.setClearColor(getTheme() === "dark" ? 0x09090b : 0xffffff, 1);
+            syncClear();
+            subscribeTheme(syncClear);
             renderer.toneMapping = THREE.NoToneMapping;
             return renderer as unknown as WebGLRenderer;
           }}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 // The intro curtain covers the very first load; the wipe is for navigations after it.
 const mounts = { count: 0 };

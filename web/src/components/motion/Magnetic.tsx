@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
-import { motion, useReducedMotion, useSpring } from "motion/react";
+import { motion, useSpring } from "motion/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 /** Pulls its child towards the pointer (clamped) and springs back on leave. */
 export function Magnetic({ children, strength = 0.3, className }: { children: ReactNode; strength?: number; className?: string }) {

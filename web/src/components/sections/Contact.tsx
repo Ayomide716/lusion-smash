@@ -40,7 +40,7 @@ export function Contact() {
             </dl>
           </Reveal>
         </div>
-        <Reveal delay={0.15} className="relative rounded-3xl bg-white/90 p-6 text-fg shadow-[0_40px_120px_-40px_rgb(80_7_36/0.55)] backdrop-blur-xl md:p-8">
+        <Reveal delay={0.15} className="relative rounded-3xl bg-panel/90 p-6 text-fg shadow-[0_40px_120px_-40px_rgb(80_7_36/0.55)] backdrop-blur-xl md:p-8">
           <ContactForm />
         </Reveal>
       </div>

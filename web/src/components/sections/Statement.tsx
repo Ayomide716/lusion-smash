@@ -7,7 +7,7 @@ const disciplines = ["Product engineering", "Full-stack", "TypeScript", "Go", "R
 export function Statement() {
   return (
     <section aria-label="What I do" data-shape="initials" data-shape-x="0.38" data-shape-y="0.22" data-shape-scale="0.95" className="relative py-16 md:py-28">
-      <Marquee className="border-y border-line bg-white/50 py-5 backdrop-blur-sm md:py-7" speed={60}>
+      <Marquee className="border-y border-line bg-panel/50 py-5 backdrop-blur-sm md:py-7" speed={60}>
         {disciplines.map((d) => (
           <span key={d} className="flex items-center font-display text-4xl font-bold tracking-[-0.03em] whitespace-nowrap md:text-7xl">
             <span className="px-6 md:px-10">{d}</span>

@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 /** Giant name that rises letter by letter when the footer scrolls into view. */
 export function Wordmark({ text }: { text: string }) {
@@ -16,7 +17,7 @@ export function Wordmark({ text }: { text: string }) {
           initial={reduce ? false : { y: "100%" }}
           whileInView={{ y: "0%" }}
           viewport={{ once: true, margin: "0px 0px -5% 0px" }}
-          transition={{ duration: 1, delay: i * 0.035, ease: [0.16, 1, 0.3, 1] }}
+          transition={reduce ? { duration: 0 } : { duration: 1, delay: i * 0.035, ease: [0.16, 1, 0.3, 1] }}
         >
           {ch === " " ? " " : ch}
         </motion.span>

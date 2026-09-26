@@ -7,6 +7,7 @@ import { SmoothScroll } from "@/components/SmoothScroll";
 import { Intro } from "@/components/Intro";
 import { Cursor } from "@/components/motion/Cursor";
 import { site } from "@/content/site";
+import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
 // ui-ux-pro-max "Minimalist Portfolio" pairing. next/font self-hosts both and
@@ -46,8 +47,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      data-theme="light"
+      suppressHydrationWarning
       className={`${spaceGrotesk.variable} ${archivo.variable} antialiased`}
     >
+      <head>
+        {/* Apply a saved theme before first paint (no flash of the wrong theme). */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-dvh">
         <a
           href="#main"

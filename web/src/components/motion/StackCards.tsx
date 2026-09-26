@@ -1,12 +1,13 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from "motion/react";
+import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 type Item = { title: string; body: string };
 
 const TONES = [
-  "bg-white text-fg border-line",
+  "bg-panel text-fg border-line",
   "bg-accent-soft text-fg border-accent/15",
   "bg-fg text-canvas border-fg",
 ];

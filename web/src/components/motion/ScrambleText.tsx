@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useInView, useReducedMotion } from "motion/react";
+import { useInView } from "motion/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*+/<>=";
 

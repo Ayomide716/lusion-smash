@@ -59,7 +59,7 @@ export function MobileMenu({ links }: { links: { href: string; label: string }[]
             role="dialog"
             aria-modal="true"
             aria-label="Menu"
-            className="fixed inset-0 z-40 flex flex-col justify-between bg-accent px-6 pt-28 pb-10 text-white md:hidden"
+            className="fixed inset-0 z-40 flex flex-col justify-between bg-accent px-6 pt-28 pb-10 text-on-accent md:hidden"
             initial={{ clipPath: "inset(0 0 100% 0)" }}
             animate={{ clipPath: "inset(0 0 0% 0)" }}
             exit={{ clipPath: "inset(0 0 100% 0)" }}
@@ -80,7 +80,7 @@ export function MobileMenu({ links }: { links: { href: string; label: string }[]
                         onClick={() => setOpen(false)}
                         className="flex items-baseline gap-3 font-display text-5xl font-bold tracking-[-0.04em]"
                       >
-                        <span className="font-mono text-xs font-normal tracking-widest text-white/60">0{i + 1}</span>
+                        <span className="font-mono text-xs font-normal tracking-widest text-on-accent/60">0{i + 1}</span>
                         {l.label}
                       </Link>
                     </motion.div>
@@ -98,7 +98,7 @@ export function MobileMenu({ links }: { links: { href: string; label: string }[]
               <a href={`mailto:${site.email}`} className="block text-lg underline underline-offset-4">
                 {site.email}
               </a>
-              <ul className="flex gap-5 text-white/80">
+              <ul className="flex gap-5 text-on-accent/80">
                 {site.socials.map((s) => (
                   <li key={s.label}>
                     <a href={s.href} target="_blank" rel="noreferrer">

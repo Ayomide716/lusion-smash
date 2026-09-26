@@ -6,7 +6,7 @@ import { sendMessage, type ContactState } from "@/app/actions/contact";
 const initial: ContactState = { status: "idle" };
 
 const inputClass =
-  "mt-2 w-full rounded-2xl border border-line bg-white/80 px-4 py-3 text-fg placeholder:text-muted/60 transition-colors outline-none focus:border-accent/70 focus:bg-white aria-[invalid=true]:border-rose-500/70";
+  "mt-2 w-full rounded-2xl border border-line bg-panel/80 px-4 py-3 text-fg placeholder:text-muted/60 transition-colors outline-none focus:border-accent/70 focus:bg-panel aria-[invalid=true]:border-rose-500/70";
 
 export function ContactForm() {
   const [state, action, pending] = useActionState(sendMessage, initial);

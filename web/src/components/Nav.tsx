@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { site } from "@/content/site";
 import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { SoundToggle } from "@/components/SoundToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { MobileMenu } from "@/components/MobileMenu";
 
 const links = [
@@ -27,7 +28,7 @@ export function Nav() {
   return (
     <header
       data-scrolled={scrolled}
-      className="fixed inset-x-0 top-0 z-50 border-b border-transparent bg-white/40 backdrop-blur-md backdrop-saturate-150 transition-[background-color,border-color,backdrop-filter] duration-500 data-[scrolled=true]:border-line data-[scrolled=true]:bg-white/70 data-[scrolled=true]:backdrop-blur-xl print:hidden"
+      className="fixed inset-x-0 top-0 z-50 border-b border-transparent bg-panel/40 backdrop-blur-md backdrop-saturate-150 transition-[background-color,border-color,backdrop-filter] duration-500 data-[scrolled=true]:border-line data-[scrolled=true]:bg-panel/70 data-[scrolled=true]:backdrop-blur-xl print:hidden"
     >
       <nav aria-label="Primary" className="container-page flex h-16 items-center justify-between gap-4 md:h-18">
         <Link href="/" className="flex items-center gap-2.5 font-display text-base font-semibold tracking-tight">
@@ -57,6 +58,7 @@ export function Nav() {
         </ul>
         <div className="flex items-center gap-2">
           <SoundToggle />
+          <ThemeToggle />
           <Link
             href="/cv"
             className="hidden h-10 items-center rounded-full bg-fg px-5 text-sm font-medium text-canvas transition-transform duration-300 ease-out-expo hover:scale-[1.04] md:flex"

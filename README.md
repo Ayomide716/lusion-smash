@@ -39,7 +39,11 @@ headlines, a scroll-velocity marquee, a statement that lights up word by word, c
 project cards, a scroll-drawn timeline, a scroll progress bar, rolling nav links, a pink route-transition wipe and a
 letter-by-letter footer wordmark. Set pieces: a 0→100 loading counter, a pinned horizontal Work gallery, stacking
 principle cards, a scroll-driven pink circle reveal for Contact, scrambling section labels, a full-screen mobile menu
-and optional synthesised UI sound (Web Audio, off by default). Everything is transform/opacity/clip-path only and
+and optional synthesised UI sound (Web Audio, off by default): click/hover blips plus a generative ambient of slow
+chords and pentatonic chimes through a synthesised reverb. A light/dark toggle wipes the new theme in as a circle from
+the click point (View Transitions API) and is applied before first paint from `localStorage`; the particles switch to
+additive glow on dark. Hero letters thin out under the cursor (variable font axis), and clicks send a shockwave ring
+through the particle field. Everything is transform/opacity/clip-path only and
 switches off under reduced motion.
 
 Design system: generated with the ui-ux-pro-max skill (`.claude/skills/ui-ux-pro-max`) — creative-pink-on-neutral palette,

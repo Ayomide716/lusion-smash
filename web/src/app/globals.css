@@ -5,6 +5,7 @@
 @theme {
   --color-canvas: #ffffff;
   --color-surface: #fafafa;
+  --color-panel: #ffffff;
   --color-fg: #0a0a0b;
   --color-muted: #52525b;
   --color-line: rgb(10 10 11 / 0.09);
@@ -18,6 +19,32 @@
   --font-mono: var(--font-space-grotesk), ui-monospace, monospace;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dark theme: same token names, so every utility follows automatically. The
+   accent lightens to pink-400 so it keeps contrast on near-black; text on
+   accent flips to dark. */
+html[data-theme="dark"] {
+  --color-canvas: #09090b;
+  --color-surface: #111114;
+  --color-panel: #17171b;
+  --color-fg: #f4f4f5;
+  --color-muted: #a1a1aa;
+  --color-line: rgb(244 244 245 / 0.1);
+  --color-accent: #f472b6;
+  --color-accent-soft: #3a0f25;
+  --color-on-accent: #0a0a0b;
+  --glass-bg: rgb(23 23 27 / 0.55);
+  --glass-border: rgb(244 244 245 / 0.08);
+  --glass-highlight: rgb(255 255 255 / 0.05);
+  color-scheme: dark;
+}
+
+/* Theme switch: the new theme grows as a circle (driven from lib/theme.ts). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 @layer base {
@@ -77,10 +104,10 @@
 }
 
 @utility glass {
-  background: rgb(255 255 255 / 0.62);
-  border: 1px solid rgb(10 10 11 / 0.07);
+  background: var(--glass-bg, rgb(255 255 255 / 0.62));
+  border: 1px solid var(--glass-border, rgb(10 10 11 / 0.07));
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.8),
+    inset 0 1px 0 var(--glass-highlight, rgb(255 255 255 / 0.8)),
     0 24px 60px -30px rgb(219 39 119 / 0.25);
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);

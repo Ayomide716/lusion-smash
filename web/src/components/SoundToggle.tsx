@@ -31,7 +31,7 @@ export function SoundToggle({ className }: { className?: string }) {
       aria-label={on ? "Turn sound off" : "Turn sound on"}
       data-cursor={on ? "Mute" : "Sound"}
       onClick={() => setSound(!on)}
-      className={`flex h-10 items-center gap-2 rounded-full px-3 text-xs font-medium text-fg/70 transition-colors hover:bg-black/5 hover:text-fg ${className ?? ""}`}
+      className={`flex h-10 items-center gap-2 rounded-full px-3 text-xs font-medium text-fg/70 transition-colors hover:bg-fg/5 hover:text-fg ${className ?? ""}`}
     >
       <span aria-hidden className="flex h-3.5 items-end gap-[2px]">
         {[0, 1, 2, 3].map((i) => (

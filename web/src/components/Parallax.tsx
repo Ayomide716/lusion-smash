@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
-import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { motion, useScroll, useTransform } from "motion/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 /**
  * Moves its children against the scroll direction by `speed` × 120px across the

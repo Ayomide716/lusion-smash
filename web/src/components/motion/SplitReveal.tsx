@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 /**
  * Word-by-word masked reveal for short headlines. Screen readers get the plain
@@ -19,7 +20,7 @@ export function SplitReveal({ text, className, delay = 0 }: { text: string; clas
             initial={reduce ? false : { y: "105%", rotate: 4 }}
             whileInView={{ y: "0%", rotate: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}
-            transition={{ duration: 0.9, delay: delay + i * 0.06, ease: [0.16, 1, 0.3, 1] }}
+            transition={reduce ? { duration: 0 } : { duration: 0.9, delay: delay + i * 0.06, ease: [0.16, 1, 0.3, 1] }}
           >
             {word}
             {i < words.length - 1 ? " " : ""}

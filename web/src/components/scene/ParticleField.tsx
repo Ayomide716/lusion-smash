@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import type * as THREE from "three/webgpu";
 import { loadEngine } from "@/lib/engine";
+import { getTheme, subscribeTheme } from "@/lib/theme";
 import { createSimulation, stepSimulation, type Simulation, type SimulationOptions } from "./simulation";
 
 export function ParticleField({ count, size, reducedMotion, text }: SimulationOptions) {
@@ -15,12 +16,16 @@ export function ParticleField({ count, size, reducedMotion, text }: SimulationOp
     const next = createSimulation({ count, size, reducedMotion, text });
     sim.current = next;
     scene.add(next.sprite);
+    const syncTheme = () => next.setDark(getTheme() === "dark");
+    syncTheme();
+    const unsubscribeTheme = subscribeTheme(syncTheme);
     let cancelled = false;
     loadEngine().then((engine) => {
       if (!cancelled) next.engine = engine;
     });
     return () => {
       cancelled = true;
+      unsubscribeTheme();
       scene.remove(next.sprite);
       next.dispose();
       sim.current = null;

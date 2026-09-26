@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
-import { motion, useReducedMotion, useScroll, useSpring } from "motion/react";
+import { motion, useScroll, useSpring } from "motion/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 /** Wraps a list with a vertical accent line that draws itself as you scroll through it. */
 export function ScrollLine({ children, className }: { children: ReactNode; className?: string }) {

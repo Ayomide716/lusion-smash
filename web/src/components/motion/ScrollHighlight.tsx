@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from "motion/react";
+import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 function Word({ word, progress, range, accent }: { word: string; progress: MotionValue<number>; range: [number, number]; accent: boolean }) {
   const opacity = useTransform(progress, range, [0.14, 1]);
@@ -25,7 +26,7 @@ export function ScrollHighlight({ text, className }: { text: string; className?:
 
   if (reduce) {
     return (
-      <p className={className}>
+      <p ref={ref} className={className}>
         {words.map((w, i) => (
           <span key={i} className={w.startsWith("*") ? "text-accent" : undefined}>
             {w.replaceAll("*", "")}{" "}

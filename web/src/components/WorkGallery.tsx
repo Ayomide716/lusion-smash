@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
+import { motion, useMotionValue, useMotionValueEvent, useScroll, useSpring, useTransform } from "motion/react";
 import type { Project } from "@/content/site";
 import { site } from "@/content/site";
 import { ProjectCard } from "@/components/ProjectCard";
 import { Reveal } from "@/components/Reveal";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 const DESKTOP = "(min-width: 768px)";
 
@@ -29,9 +30,9 @@ function EndCard() {
       target="_blank"
       rel="noreferrer"
       data-cursor="Open"
-      className="group flex h-full flex-col justify-between rounded-3xl border border-dashed border-accent/40 p-8 transition-colors duration-500 hover:bg-accent hover:text-white"
+      className="group flex h-full flex-col justify-between rounded-3xl border border-dashed border-accent/40 p-8 transition-colors duration-500 hover:bg-accent hover:text-on-accent"
     >
-      <span className="font-mono text-xs tracking-widest text-accent uppercase group-hover:text-white/80">More</span>
+      <span className="font-mono text-xs tracking-widest text-accent uppercase group-hover:text-on-accent/80">More</span>
       <span className="font-display text-3xl leading-tight font-bold tracking-tight lg:text-4xl">
         Side projects &amp; experiments on GitHub <span aria-hidden className="inline-block transition-transform duration-500 group-hover:translate-x-2">→</span>
       </span>
@@ -81,6 +82,8 @@ export function WorkGallery({ projects }: { projects: Project[] }) {
 
   if (!horizontal) {
     return (
+      // The scroll target ref stays attached here too, so useScroll never points at nothing.
+      <div ref={section}>
       <ul className="container-page mt-14 grid gap-5">
         {projects.map((p, i) => (
           <li key={p.slug}>
@@ -90,6 +93,7 @@ export function WorkGallery({ projects }: { projects: Project[] }) {
           </li>
         ))}
       </ul>
+      </div>
     );
   }
 

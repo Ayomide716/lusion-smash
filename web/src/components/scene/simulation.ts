@@ -148,6 +148,9 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     /** World units spanned by the viewport at z = 0 (maps world xy ↔ fluid uv). */
     fieldScale: uniform(new THREE.Vector2(1, 1)),
     fluidDrag: uniform(reducedMotion ? 2 : 4.5),
+    opacity: uniform(0.85),
+    shockPos: uniform(new THREE.Vector2(0, 0)),
+    shockAge: uniform(99),
   };
 
   const pick = (idx: typeof u.from) => {
@@ -215,6 +218,17 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
       acc.xy.addAssign(u.pointerVel.mul(falloff).mul(6));
     });
 
+    // Click shockwave: an expanding ring that kicks particles outward as it passes.
+    If(u.shockAge.lessThan(2.5), () => {
+      const rel = p.xy.sub(u.shockPos);
+      const dist = rel.length();
+      const ring = u.shockAge.mul(3.5);
+      const band = dist.sub(ring).abs().div(0.45).oneMinus().saturate();
+      const fade = u.shockAge.mul(-1.4).exp();
+      const push = rel.div(dist.add(0.001)).mul(band.mul(fade).mul(38));
+      acc.addAssign(vec3(push, band.mul(fade).mul(6)));
+    });
+
     const damp = u.damping.pow(u.dt.mul(60));
     const v = vel.xyz.mul(damp).add(acc.mul(u.dt));
     vel.assign(vec4(v, 0));
@@ -246,7 +260,7 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
 
   material.positionNode = posAttr;
   material.colorNode = tint;
-  material.opacityNode = disc.mul(0.85);
+  material.opacityNode = disc.mul(u.opacity);
   material.scaleNode = u.size.mul(seed.mul(0.9).add(0.45)).mul(speed.mul(0.1).add(1).min(1.6));
 
   const sprite = new THREE.Sprite(material);
@@ -262,6 +276,12 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     fps: { frames: 0, elapsed: 0 },
     fieldTex,
     engine: null as Engine | null,
+    /** White page: alpha-blended pink. Dark page: additive, so dense areas glow. */
+    setDark(dark: boolean) {
+      material.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
+      material.needsUpdate = true;
+      u.opacity.value = dark ? 0.5 : 0.85;
+    },
     dispose() {
       material.dispose();
       fieldTex.dispose();
@@ -338,6 +358,11 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
     u.pointerVel.value.set(0, 0);
   }
   sim.pointerLast = { x: px, y: py };
+
+  const shock = sceneState.shock;
+  shock.age += dt;
+  u.shockAge.value = shock.age;
+  u.shockPos.value.set(shock.x * halfW, shock.y * halfH);
 
   sceneState.energy = Math.max(0, sceneState.energy - dt * 0.8);
   u.energy.value = THREE.MathUtils.lerp(u.energy.value, sceneState.energy, 0.08);

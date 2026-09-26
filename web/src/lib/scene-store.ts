@@ -23,6 +23,8 @@ export const sceneState = {
   pointer: { x: 0, y: 0, active: false },
   /** Page-level energy spike (e.g. hovering a project), decays in the loop. */
   energy: 0,
+  /** Last click in NDC and seconds since it (large = no active shockwave). */
+  shock: { x: 0, y: 0, age: 99 },
 };
 
 export function getStats(): SceneStats {

@@ -1,16 +1,8 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
-import {
-  motion,
-  useAnimationFrame,
-  useMotionValue,
-  useReducedMotion,
-  useScroll,
-  useSpring,
-  useTransform,
-  useVelocity,
-} from "motion/react";
+import { motion, useAnimationFrame, useMotionValue, useScroll, useSpring, useTransform, useVelocity } from "motion/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 /**
  * Infinite marquee whose speed and skew react to scroll velocity: scrolling

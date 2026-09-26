@@ -21,7 +21,7 @@ export function Experience() {
         <Reveal>
           <Link
             href="/cv"
-            className="glass inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-medium transition-colors hover:bg-black/5"
+            className="glass inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-medium transition-colors hover:bg-fg/5"
           >
             View full résumé <span aria-hidden>↗</span>
           </Link>

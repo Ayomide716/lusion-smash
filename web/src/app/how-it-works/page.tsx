@@ -86,7 +86,7 @@ export default function HowItWorks() {
                   <p className="font-mono text-xs tracking-widest text-muted uppercase">{l.role}</p>
                   <span
                     className={`rounded-full px-2.5 py-1 font-mono text-[11px] ${
-                      l.status === "Live" ? "bg-accent/15 text-accent" : "bg-black/5 text-fg/60"
+                      l.status === "Live" ? "bg-accent/15 text-accent" : "bg-fg/5 text-fg/60"
                     }`}
                   >
                     {l.status}

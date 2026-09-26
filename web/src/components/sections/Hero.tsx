@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useRef, useSyncExternalStore, type ReactNode } from "react";
-import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { motion, useScroll, useTransform } from "motion/react";
 import { site } from "@/content/site";
 import { getIntroDone, subscribeIntro } from "@/lib/scene-store";
 import { Magnetic } from "@/components/motion/Magnetic";
+import { ReactiveText } from "@/components/motion/ReactiveText";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -78,10 +80,12 @@ export function Hero() {
           className="max-w-5xl text-[13vw] leading-[0.9] font-bold tracking-[-0.05em] sm:text-7xl lg:text-[7.5rem]"
         >
           <Line play={play} delay={0.05}>
-            {first}
+            <ReactiveText text={first} />
           </Line>
           <Line play={play} delay={0.15}>
-            <span className="text-accent">{rest.join(" ")}</span>
+            <span className="text-accent">
+              <ReactiveText text={rest.join(" ")} />
+            </span>
           </Line>
         </h1>
 
@@ -105,7 +109,7 @@ export function Hero() {
           </Magnetic>
           <Link
             href="/#contact"
-            className="glass inline-flex h-14 items-center rounded-full px-7 text-sm font-medium transition-colors hover:bg-black/5"
+            className="glass inline-flex h-14 items-center rounded-full px-7 text-sm font-medium transition-colors hover:bg-fg/5"
           >
             Get in touch
           </Link>

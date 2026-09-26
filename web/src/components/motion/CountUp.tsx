@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { animate, useInView, useReducedMotion } from "motion/react";
+import { animate, useInView } from "motion/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 const NUMBER = /^(\D*?)(\d+(?:\.\d+)?)(.*)$/;
 
