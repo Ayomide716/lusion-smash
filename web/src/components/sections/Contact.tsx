@@ -4,6 +4,16 @@ import { Reveal } from "@/components/Reveal";
 import { ParallaxWord } from "@/components/Parallax";
 import { SectionHeading } from "@/components/SectionHeading";
 import { CircleReveal } from "@/components/motion/CircleReveal";
+import { Magnetic } from "@/components/motion/Magnetic";
+
+function ChatIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
+      <path d="M12 3.5a8.5 8.5 0 0 0-7.36 12.75L3.5 20.5l4.37-1.12A8.5 8.5 0 1 0 12 3.5Z" />
+      <path d="M9.2 8.6c.2-.4.5-.4.7-.4h.5c.2 0 .4 0 .5.4l.6 1.5c.1.2 0 .4-.1.6l-.5.6c.6 1.1 1.5 2 2.6 2.6l.6-.5c.2-.1.4-.2.6-.1l1.5.6c.3.1.4.3.4.5v.5c0 .2 0 .5-.4.7-.5.3-1.2.5-1.9.3-2.4-.6-4.6-2.8-5.2-5.2-.2-.7 0-1.4.1-1.9Z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
 
 export function Contact() {
   return (
@@ -21,15 +31,40 @@ export function Contact() {
           <SectionHeading id="contact-title" eyebrow="Contact" title="Have a product to build?" italic="Let's talk." inverse />
           <Reveal delay={0.1}>
             <p className="mt-6 max-w-md text-lg opacity-80">
-              I&apos;m available for freelance projects and open to full-time roles. The fastest way to reach me is this
-              form, or email.
+              I&apos;m available for freelance projects and open to full-time roles. The fastest way to reach me is
+              WhatsApp, or use the form or email.
             </p>
+            <Magnetic className="mt-8">
+              <a
+                href={site.whatsapp.href}
+                target="_blank"
+                rel="noreferrer"
+                data-cursor="Chat"
+                className="group inline-flex h-14 items-center gap-3 rounded-full bg-canvas px-7 font-medium text-fg shadow-[0_18px_40px_-18px_rgb(80_7_36/0.6)] transition-transform duration-300 ease-out-expo hover:scale-[1.03]"
+              >
+                <span className="text-accent">
+                  <ChatIcon />
+                </span>
+                Chat on WhatsApp
+                <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
+                  ↗
+                </span>
+              </a>
+            </Magnetic>
             <dl className="mt-10 space-y-5 text-sm">
               <div>
                 <dt className="font-mono text-xs tracking-widest uppercase opacity-70">Email</dt>
                 <dd className="mt-1 text-lg">
                   <a href={`mailto:${site.email}`} data-cursor="Email" className="underline decoration-current/40 underline-offset-4 hover:decoration-current">
                     {site.email}
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt className="font-mono text-xs tracking-widest uppercase opacity-70">WhatsApp</dt>
+                <dd className="mt-1 text-lg">
+                  <a href={site.whatsapp.href} target="_blank" rel="noreferrer" data-cursor="Chat" className="underline decoration-current/40 underline-offset-4 hover:decoration-current">
+                    {site.whatsapp.display}
                   </a>
                 </dd>
               </div>

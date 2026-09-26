@@ -9,6 +9,10 @@ export const site = {
   pitch: "I build fast, considered products — from the database to the last pixel.",
   location: "Lagos, Nigeria · Remote",
   email: "ayomidefamoyegun1@gmail.com",
+  whatsapp: {
+    display: "+234 812 163 2484",
+    href: `https://wa.me/2348121632484?text=${encodeURIComponent("Hi Ayomide, I found your portfolio and I'd like to talk about a project.")}`,
+  },
   // Set NEXT_PUBLIC_SITE_URL for a custom domain; on Vercel the production URL is used automatically.
   url:
     process.env.NEXT_PUBLIC_SITE_URL ??
