@@ -32,6 +32,7 @@ export function ProjectCard({ project, index }: { project: Project; index: numbe
     <Link
       href={`/work/${project.slug}`}
       data-cursor="View"
+      data-particles={project.title.toUpperCase()}
       onPointerEnter={excite}
       onPointerMove={track}
       onPointerLeave={reset}

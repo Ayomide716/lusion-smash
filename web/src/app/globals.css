@@ -148,9 +148,11 @@ html[data-theme="dark"] {
   animation: intro-bar 2.4s var(--ease-out-expo) forwards;
 }
 
+/* The curtain fades rather than slides: the particles are waiting behind it in
+   the shape of the "100" counter, and fly out of it as it clears. */
 @keyframes curtain-out {
   to {
-    transform: translateY(-100%);
+    opacity: 0;
     visibility: hidden;
   }
 }

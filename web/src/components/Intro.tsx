@@ -71,6 +71,7 @@ export function Intro() {
       </div>
       <span
         ref={counter}
+        data-intro-counter
         className="absolute right-6 bottom-4 font-display text-[22vw] leading-none font-bold tracking-[-0.06em] text-accent tabular-nums md:right-10 md:text-[14vw]"
       >
         000

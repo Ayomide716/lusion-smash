@@ -40,6 +40,7 @@ export function Nav() {
             <li key={l.href}>
               <Link
                 href={l.href}
+                data-particles={l.label.toUpperCase()}
                 className="group relative block overflow-hidden rounded-full px-3.5 py-2 text-fg/70 transition-colors duration-200 hover:text-fg"
               >
                 {/* Text roll: the label slides up and an accent copy slides in beneath it. */}

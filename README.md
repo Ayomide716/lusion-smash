@@ -43,7 +43,9 @@ and optional synthesised UI sound (Web Audio, off by default): click/hover blips
 chords and pentatonic chimes through a synthesised reverb. A light/dark toggle wipes the new theme in as a circle from
 the click point (View Transitions API) and is applied before first paint from `localStorage`; the particles switch to
 additive glow on dark. Hero letters thin out under the cursor (variable font axis), and clicks send a shockwave ring
-through the particle field. Everything is transform/opacity/clip-path only and
+through the particle field. The particles spell whatever you hover (nav links, project names), hand off from the
+loader (they wait behind the curtain in the shape of its "100" counter), sway with phone tilt, and the fluid's dye
+field is drawn as a soft ink trail behind the cursor. Everything is transform/opacity/clip-path only and
 switches off under reduced motion.
 
 Design system: generated with the ui-ux-pro-max skill (`.claude/skills/ui-ux-pro-max`) — creative-pink-on-neutral palette,

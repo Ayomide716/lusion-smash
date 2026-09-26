@@ -21,8 +21,8 @@ import {
   vec3,
   vec4,
 } from "three/tsl";
-import { buildShapes, SHAPES, type ShapeName } from "./shapes";
-import { sceneState, setStats } from "@/lib/scene-store";
+import { buildShapes, SHAPES, textShape, type ShapeName } from "./shapes";
+import { getIntroDone, sceneState, setStats } from "@/lib/scene-store";
 import { FIELD_SIZE, STATE, type Engine } from "@/lib/engine";
 
 export type SimulationOptions = {
@@ -45,6 +45,8 @@ export type FrameInput = {
 
 const SPIN: Record<ShapeName, number> = { initials: 0, sphere: 0.14, knot: 0.1, galaxy: 0.06 };
 const CAMERA_Z = 6;
+const FOV = 35;
+const wordCache = new Map<string, Float32Array>();
 
 type Section = { shape: number; x: number; y: number; scale: number };
 
@@ -75,12 +77,38 @@ function readScrollTargets(viewportH: number) {
 }
 
 export function createSimulation({ count, size, reducedMotion, text }: SimulationOptions) {
-  const font = getComputedStyle(document.body).fontFamily || "sans-serif";
+  const display = getComputedStyle(document.documentElement).getPropertyValue("--font-space-grotesk").trim();
+  const font = display || getComputedStyle(document.body).fontFamily || "sans-serif";
   const shapes = buildShapes(count, text, font);
+  const aspect = window.innerWidth / window.innerHeight;
+  const halfH = Math.tan(THREE.MathUtils.degToRad(FOV / 2)) * CAMERA_Z;
+  const halfW = halfH * aspect;
 
-  // Start as a wide cloud so the first frames read as the particles gathering.
+  // Loader handoff: while the intro curtain shows its "100" counter, the
+  // particles are held in the shape of that number at the same spot on screen,
+  // so when the curtain fades they appear to come out of it.
+  const counterEl = document.querySelector<HTMLElement>("[data-intro-counter]");
+  const counterBox = !reducedMotion && !getIntroDone() ? counterEl?.getBoundingClientRect() : undefined;
+  const hold = new Float32Array(count * 4);
+  if (counterBox && counterBox.width > 0) {
+    const digits = textShape(count, "100", font);
+    const w = (counterBox.width / window.innerWidth) * 2 * halfW;
+    const cx = ((counterBox.left + counterBox.width / 2) / window.innerWidth) * 2 * halfW - halfW;
+    const cy = halfH - ((counterBox.top + counterBox.height / 2) / window.innerHeight) * 2 * halfH;
+    for (let i = 0; i < count; i++) {
+      hold[i * 4] = digits[i * 4] * (w / 2) + cx;
+      hold[i * 4 + 1] = digits[i * 4 + 1] * (w / 2) + cy;
+      hold[i * 4 + 2] = digits[i * 4 + 2];
+      hold[i * 4 + 3] = 1;
+    }
+  }
+  const holding = !!counterBox && counterBox.width > 0;
+
+  // Start in the loader's "100", or as a wide cloud so the first frames read as
+  // the particles gathering.
   const start = new Float32Array(count * 4);
-  for (let i = 0; i < count; i++) {
+  if (holding) start.set(hold);
+  for (let i = 0; i < count && !holding; i++) {
     if (reducedMotion) {
       start.set(shapes.initials.subarray(i * 4, i * 4 + 4), i * 4);
       continue;
@@ -110,6 +138,19 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     return tex;
   });
   const targetNodes = targets.map((tex) => textureLoad(tex, texel) as unknown as THREE.Node<"vec4">);
+
+  const makeTex = (source?: Float32Array) => {
+    const data = new Float32Array(texWidth * texHeight * 4);
+    if (source) data.set(source);
+    const tex = new THREE.DataTexture(data, texWidth, texHeight, THREE.RGBAFormat, THREE.FloatType);
+    tex.needsUpdate = true;
+    return tex;
+  };
+  const holdTex = makeTex(hold);
+  // Hover words ("WORK", a project name…) are rasterised on demand into this texture.
+  const wordTex = makeTex();
+  const holdNode = textureLoad(holdTex, texel) as unknown as THREE.Node<"vec4">;
+  const wordNode = textureLoad(wordTex, texel) as unknown as THREE.Node<"vec4">;
 
   // Velocity field from the WebAssembly fluid solver (RG half floats, uv/s),
   // uploaded each frame straight from a view over wasm memory. Starts empty
@@ -151,6 +192,11 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     opacity: uniform(0.85),
     shockPos: uniform(new THREE.Vector2(0, 0)),
     shockAge: uniform(99),
+    hold: uniform(holding ? 1 : 0),
+    hover: uniform(0),
+    wordScale: uniform(1),
+    wordOffset: uniform(new THREE.Vector3()),
+    tilt: uniform(new THREE.Vector2()),
   };
 
   const pick = (idx: typeof u.from) => {
@@ -189,7 +235,11 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     const b = smoothstep(0, 1, u.blend.mul(1.6).sub(seed.mul(0.6)));
     const a = rotateY(pick(u.from), u.rotFrom);
     const c = rotateY(pick(u.to), u.rotTo);
-    const target = mix(a, c, b).mul(u.scale).add(u.offset);
+    const scrolled = mix(a, c, b).mul(u.scale).add(u.offset);
+    // Hovered word, staggered per particle like the scroll morph.
+    const hb = smoothstep(0, 1, u.hover.mul(1.6).sub(seed.mul(0.6)));
+    const worded = mix(scrolled, wordNode.xyz.mul(u.wordScale).add(u.wordOffset), hb);
+    const target = mix(worded, holdNode.xyz, u.hold);
 
     const p = pos.xyz;
     const spring = select(dust, float(0.04), u.spring.mul(seed.mul(0.8).add(0.6)));
@@ -197,7 +247,9 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
 
     const flow = curlNoise(p.mul(0.55).add(vec3(0, time.mul(0.07), time.mul(0.11))));
     const churn = select(dust, float(0.6), u.energy.mul(1.5).add(0.35));
-    acc.addAssign(flow.mul(u.turbulence).mul(churn));
+    acc.addAssign(flow.mul(u.turbulence).mul(churn).mul(u.hold.mul(-0.85).add(1)));
+    // Phone tilt sloshes the field sideways; the springs pull it back.
+    acc.xy.addAssign(u.tilt);
 
     // Fluid: particles are dragged towards the local flow of the Navier–Stokes
     // field, but only where it's moving, so still air doesn't damp them.
@@ -276,6 +328,26 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     fps: { frames: 0, elapsed: 0 },
     fieldTex,
     engine: null as Engine | null,
+    word: null as string | null,
+    hoverTarget: 0,
+    /** Rasterise `word` into the hover target (cached), or release it. */
+    setWord(word: string | null) {
+      if (word === this.word) return;
+      this.word = word;
+      if (!word) {
+        this.hoverTarget = 0;
+        return;
+      }
+      const key = `${count}:${word}`;
+      let shape = wordCache.get(key);
+      if (!shape) {
+        shape = textShape(count, word, font);
+        wordCache.set(key, shape);
+      }
+      (wordTex.image.data as Float32Array).set(shape);
+      wordTex.needsUpdate = true;
+      this.hoverTarget = 1;
+    },
     /** White page: alpha-blended pink. Dark page: additive, so dense areas glow. */
     setDark(dark: boolean) {
       material.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
@@ -285,6 +357,8 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     dispose() {
       material.dispose();
       fieldTex.dispose();
+      holdTex.dispose();
+      wordTex.dispose();
       targets.forEach((tex) => tex.dispose());
     },
   };
@@ -358,6 +432,18 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
     u.pointerVel.value.set(0, 0);
   }
   sim.pointerLast = { x: px, y: py };
+
+  // Loader hold releases when the intro curtain lifts.
+  if (u.hold.value > 0 && getIntroDone()) u.hold.value = Math.max(0, u.hold.value - dt * 3);
+
+  // Hovered word: fade in/out and fit it across the middle of the screen.
+  sim.setWord(sceneState.word);
+  u.hover.value += (sim.hoverTarget - u.hover.value) * Math.min(1, dt * 5);
+  u.wordScale.value = Math.min(halfW * 0.8, halfH * 1.4);
+  u.wordOffset.value.set(0, halfH * 0.05, 0.3);
+
+  // Device tilt (phones): -1..1 per axis → sideways acceleration in world units.
+  u.tilt.value.set(sceneState.tilt.x * 2.2, sceneState.tilt.y * 1.6);
 
   const shock = sceneState.shock;
   shock.age += dt;

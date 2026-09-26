@@ -36,7 +36,7 @@ const layers = [
     lang: "C++ → WebAssembly",
     status: "Live",
     role: "Fluid dynamics",
-    body: "A stable-fluids Navier–Stokes solver (semi-Lagrangian advection, pressure projection, vorticity confinement) on an 80×80 grid. Freestanding C++ with no libc or allocation, linked straight into the Rust module.",
+    body: "A stable-fluids Navier–Stokes solver (semi-Lagrangian advection, pressure projection, vorticity confinement) on an 80×80 grid, which also carries the pink ink your cursor leaves behind. Freestanding C++ with no libc or allocation, linked straight into the Rust module.",
   },
   {
     lang: "Rust → WebAssembly",

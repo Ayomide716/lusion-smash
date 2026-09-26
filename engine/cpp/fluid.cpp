@@ -17,6 +17,7 @@ constexpr int PRESSURE_ITERATIONS = 20;
 constexpr float SOR_OMEGA = 1.8f;  // successive over-relaxation factor
 
 float u[CELLS], v[CELLS];      // velocity
+float dye[CELLS], dye0[CELLS]; // passive ink carried by the flow (drawn as the cursor trail)
 float u0[CELLS], v0[CELLS];    // scratch / previous velocity
 float curl[CELLS];             // vorticity magnitude buffer
 float pressure[CELLS];         // kept between steps to warm-start the solve
@@ -137,9 +138,10 @@ int fluid_size() { return N; }
 int fluid_stride() { return W; }
 const float* fluid_u() { return u; }
 const float* fluid_v() { return v; }
+const float* fluid_dye() { return dye; }
 
 void fluid_reset() {
-  for (int k = 0; k < CELLS; ++k) u[k] = v[k] = u0[k] = v0[k] = curl[k] = pressure[k] = divergence[k] = 0.0f;
+  for (int k = 0; k < CELLS; ++k) u[k] = v[k] = u0[k] = v0[k] = curl[k] = pressure[k] = divergence[k] = dye[k] = dye0[k] = 0.0f;
 }
 
 // Add a gaussian velocity impulse centred at (x, y) in uv space.
@@ -163,9 +165,29 @@ void fluid_splat(float x, float y, float fx, float fy, float radius, float aspec
   }
 }
 
+// Add ink at (x, y): a gaussian blob, capped so repeated strokes saturate
+// instead of growing without bound.
+void fluid_splat_dye(float x, float y, float amount, float radius, float aspect) {
+  if (!(radius > 0.0f)) return;
+  const float inv = 1.0f / (radius * radius);
+  const int reach = static_cast<int>(radius * N * 3.0f) + 1;
+  const int ci = static_cast<int>(x * N) + 1;
+  const int cj = static_cast<int>(y * N) + 1;
+  for (int j = cj - reach; j <= cj + reach; ++j) {
+    if (j < 1 || j > N) continue;
+    for (int i = ci - reach; i <= ci + reach; ++i) {
+      if (i < 1 || i > N) continue;
+      float dx = ((i - 0.5f) / N - x) * aspect;
+      float dy = (j - 0.5f) / N - y;
+      float d = dye[ix(i, j)] + amount * expf_(-(dx * dx + dy * dy) * inv);
+      dye[ix(i, j)] = d > 1.0f ? 1.0f : d;
+    }
+  }
+}
+
 // Advance the simulation by dt seconds. `decay` is the per-second fraction of
 // velocity kept (e.g. 0.35), `vorticity` the confinement strength.
-void fluid_step(float dt, float decay, float vorticity) {
+void fluid_step(float dt, float decay, float vorticity, float dye_decay) {
   // decay^dt via exp(dt * ln(decay)) using a cheap log for decay in (0, 1].
   float d = clampf(decay, 0.01f, 1.0f);
   float lnd = 0.0f;
@@ -175,6 +197,12 @@ void fluid_step(float dt, float decay, float vorticity) {
     lnd = 2.0f * z * (1.0f + z2 * (1.0f / 3.0f + z2 * (1.0f / 5.0f + z2 * (1.0f / 7.0f))));
   }
   float keep = expf_(dt * lnd);
+  float dye_keep;
+  {
+    float dd = clampf(dye_decay, 0.01f, 1.0f);
+    float z = (dd - 1.0f) / (dd + 1.0f), z2 = z * z;
+    dye_keep = expf_(dt * 2.0f * z * (1.0f + z2 * (1.0f / 3.0f + z2 * (1.0f / 5.0f + z2 * (1.0f / 7.0f)))));
+  }
   for (int k = 0; k < CELLS; ++k) {
     u[k] *= keep;
     v[k] *= keep;
@@ -191,6 +219,10 @@ void fluid_step(float dt, float decay, float vorticity) {
   }
   advect(1, u, u0, u0, v0, dt);
   advect(2, v, v0, u0, v0, dt);
+
+  // Carry the ink along the (pre-projection) flow and let it fade.
+  for (int k = 0; k < CELLS; ++k) dye0[k] = dye[k] * dye_keep;
+  advect(0, dye, dye0, u0, v0, dt);
   project(u, v);
 }
 

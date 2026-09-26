@@ -134,6 +134,11 @@ function galaxy(count: number, rand: () => number) {
   return out;
 }
 
+/** Any word as a unit-width point cloud (used for hover words and the loader handoff). */
+export function textShape(count: number, text: string, fontFamily: string) {
+  return initials(count, text, fontFamily, mulberry32(text.length * 7919 + 17));
+}
+
 export function buildShapes(count: number, text: string, fontFamily: string) {
   return {
     initials: initials(count, text, fontFamily, mulberry32(1)),

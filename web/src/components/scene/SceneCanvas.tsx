@@ -185,6 +185,34 @@ export default function SceneCanvas() {
       sceneState.energy = Math.max(sceneState.energy, 0.8);
     };
     window.addEventListener("pointerdown", shock, { passive: true });
+
+    // Hovering anything with data-particles makes the field spell its word.
+    const over = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      const word = (e.target as Element | null)?.closest<HTMLElement>("[data-particles]")?.dataset.particles ?? null;
+      sceneState.word = word;
+    };
+    window.addEventListener("pointerover", over, { passive: true });
+
+    // Phones: tilting the device sloshes the particles. iOS asks permission,
+    // which must come from a tap, so request it on the first one.
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    const orient = (e: DeviceOrientationEvent) => {
+      const clamp = (v: number) => Math.max(-1, Math.min(1, v));
+      sceneState.tilt.x = clamp((e.gamma ?? 0) / 35);
+      sceneState.tilt.y = clamp(-((e.beta ?? 45) - 45) / 35);
+    };
+    type OrientationWithPermission = typeof DeviceOrientationEvent & { requestPermission?: () => Promise<string> };
+    const Orientation = (typeof DeviceOrientationEvent !== "undefined" ? DeviceOrientationEvent : null) as OrientationWithPermission | null;
+    const askTilt = () => {
+      Orientation?.requestPermission?.()
+        .then((state) => state === "granted" && window.addEventListener("deviceorientation", orient))
+        .catch(() => {});
+    };
+    if (coarse && Orientation) {
+      if (typeof Orientation.requestPermission === "function") window.addEventListener("pointerdown", askTilt, { once: true });
+      else window.addEventListener("deviceorientation", orient);
+    }
     window.addEventListener("pointermove", move, { passive: true });
     window.addEventListener("pointerdown", move, { passive: true });
     window.addEventListener("pointerup", up, { passive: true });
@@ -194,6 +222,9 @@ export default function SceneCanvas() {
       window.removeEventListener("pointerdown", move);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointerdown", shock);
+      window.removeEventListener("pointerover", over);
+      window.removeEventListener("pointerdown", askTilt);
+      window.removeEventListener("deviceorientation", orient);
       document.documentElement.removeEventListener("pointerleave", leave);
     };
   }, []);

@@ -25,6 +25,10 @@ export const sceneState = {
   energy: 0,
   /** Last click in NDC and seconds since it (large = no active shockwave). */
   shock: { x: 0, y: 0, age: 99 },
+  /** Word the particles should spell while something with data-particles is hovered. */
+  word: null as string | null,
+  /** Device tilt on phones, -1..1 per axis. */
+  tilt: { x: 0, y: 0 },
 };
 
 export function getStats(): SceneStats {

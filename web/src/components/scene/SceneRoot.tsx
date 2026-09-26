@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { InkTrail } from "./InkTrail";
 
 // The GPU scene is client-only and loaded after the page is interactive,
 // so the text content never waits on three.js.
@@ -15,6 +16,7 @@ export function SceneRoot() {
         <div className="absolute top-[55%] left-[12%] size-[34vmax] rounded-full bg-accent-soft blur-[80px] motion-safe:animate-[drift_22s_ease-in-out_infinite_reverse]" />
       </div>
       <SceneCanvas />
+      <InkTrail />
     </>
   );
 }

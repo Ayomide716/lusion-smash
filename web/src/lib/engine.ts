@@ -9,6 +9,8 @@ type EngineExports = {
   engine_field_ptr(): number;
   engine_field_len(): number;
   engine_state_ptr(): number;
+  engine_ink_ptr(): number;
+  engine_ink_len(): number;
   engine_state_len(): number;
 };
 
@@ -17,6 +19,8 @@ export type Engine = {
   size: number;
   /** Interleaved RG half floats, `size²` texels, row 0 = bottom. Updated in place. */
   field: Uint16Array;
+  /** Ink density per cell (0–255), `size²` bytes, row 0 = bottom. Updated in place. */
+  ink: Uint8Array;
   /** See `engine/src/lib.rs` `state` module for the layout. */
   state: Float32Array;
   frame(dt: number, x: number, y: number, active: boolean, aspect: number): void;
@@ -59,6 +63,7 @@ async function instantiate(url: string): Promise<Engine> {
   const views = () => ({
     field: new Uint16Array(wasm.memory.buffer, wasm.engine_field_ptr(), wasm.engine_field_len()),
     state: new Float32Array(wasm.memory.buffer, wasm.engine_state_ptr(), wasm.engine_state_len()),
+    ink: new Uint8Array(wasm.memory.buffer, wasm.engine_ink_ptr(), wasm.engine_ink_len()),
   });
 
   const engine: Engine = {

@@ -29,6 +29,9 @@ const MAX_SPLAT_FORCE: f32 = 3.0;
 /// Fraction of velocity kept per second, and vorticity confinement strength.
 const DECAY: f32 = 0.35;
 const VORTICITY: f32 = 18.0;
+/// Fraction of ink kept per second, and ink laid per unit of pointer speed.
+const DYE_DECAY: f32 = 0.18;
+const DYE_PER_SPEED: f32 = 0.9;
 
 /// Layout of the state block exposed to JavaScript.
 pub mod state {
@@ -49,6 +52,7 @@ pub struct Engine {
     accumulator: f32,
     sim_time: f32,
     field: Vec<u16>,
+    ink: Vec<u8>,
     state: [f32; state::LEN],
 }
 
@@ -62,6 +66,7 @@ impl Engine {
             accumulator: 0.0,
             sim_time: 0.0,
             field: vec![0; n * n * 2],
+            ink: vec![0; n * n],
             state: [0.0; state::LEN],
         }
     }
@@ -114,15 +119,20 @@ impl Engine {
             let v = self.pointer.velocity;
             let fx = (v[0] * 0.5 * FORCE_SCALE / count as f32).clamp(-MAX_SPLAT_FORCE, MAX_SPLAT_FORCE);
             let fy = (v[1] * 0.5 * FORCE_SCALE / count as f32).clamp(-MAX_SPLAT_FORCE, MAX_SPLAT_FORCE);
+            let speed = (v[0] * v[0] + v[1] * v[1]).sqrt();
+            let ink = (speed * DYE_PER_SPEED * FIXED_DT * 6.0 / count as f32).min(0.5);
             for k in 1..=count {
                 let t = k as f32 / count as f32;
                 let u = (from[0] + (to[0] - from[0]) * t) * 0.5 + 0.5;
                 let w = (from[1] + (to[1] - from[1]) * t) * 0.5 + 0.5;
                 self.fluid.splat(u, w, fx, fy, SPLAT_RADIUS, aspect);
+                if ink > 0.0 {
+                    self.fluid.splat_dye(u, w, ink, SPLAT_RADIUS * 0.7, aspect);
+                }
             }
         }
 
-        self.fluid.step(FIXED_DT, DECAY, VORTICITY);
+        self.fluid.step(FIXED_DT, DECAY, VORTICITY, DYE_DECAY);
         self.sim_time += FIXED_DT;
     }
 
@@ -131,6 +141,7 @@ impl Engine {
         let n = self.fluid.size();
         let stride = self.fluid.stride();
         let (u, v) = self.fluid.velocity();
+        let dye = self.fluid.dye();
         let mut peak = 0.0f32;
         for j in 0..n {
             for i in 0..n {
@@ -140,6 +151,7 @@ impl Engine {
                 peak = peak.max(vx * vx + vy * vy);
                 self.field[dst] = half::f32_to_f16(vx);
                 self.field[dst + 1] = half::f32_to_f16(vy);
+                self.ink[i + n * j] = (dye[src].clamp(0.0, 1.0) * 255.0 + 0.5) as u8;
             }
         }
         self.state[state::PEAK_SPEED] = peak.sqrt();
@@ -147,6 +159,11 @@ impl Engine {
 
     pub fn field(&self) -> &[u16] {
         &self.field
+    }
+
+    /// Ink density per cell (0–255), `size²` bytes, row 0 = bottom.
+    pub fn ink(&self) -> &[u8] {
+        &self.ink
     }
 
     pub fn state(&self) -> &[f32; state::LEN] {
@@ -198,6 +215,16 @@ pub extern "C" fn engine_field_ptr() -> *const u16 {
 #[no_mangle]
 pub extern "C" fn engine_field_len() -> u32 {
     with_engine(|e| e.field().len() as u32)
+}
+
+#[no_mangle]
+pub extern "C" fn engine_ink_ptr() -> *const u8 {
+    with_engine(|e| e.ink().as_ptr())
+}
+
+#[no_mangle]
+pub extern "C" fn engine_ink_len() -> u32 {
+    with_engine(|e| e.ink().len() as u32)
 }
 
 #[no_mangle]
@@ -317,8 +344,24 @@ mod tests {
             }
         }
         assert!(e.state().iter().all(|v| v.is_finite()));
+        assert!(e.velocity_f32().0.iter().all(|x| x.is_finite()));
         let (u, v, _) = e.velocity_f32();
         assert!(u.iter().chain(v).all(|x| x.is_finite()));
+    }
+
+    #[test]
+    fn dragging_leaves_ink_that_fades() {
+        let _g = SOLVER.lock().unwrap();
+        let mut e = Engine::new();
+        drag(&mut e, 40);
+        let inked = e.ink().iter().filter(|&&d| d > 20).count();
+        assert!(inked > 20, "a stroke should leave visible ink, got {inked} cells");
+        let total = |e: &Engine| e.ink().iter().map(|&d| d as u32).sum::<u32>();
+        let before = total(&e);
+        for _ in 0..300 {
+            e.frame(1.0 / 60.0, 0.0, 0.0, false, 16.0 / 9.0);
+        }
+        assert!(total(&e) < before / 10, "ink should fade once the pointer stops");
     }
 
     #[test]
@@ -326,5 +369,6 @@ mod tests {
         let _g = SOLVER.lock().unwrap();
         let e = Engine::new();
         assert_eq!(e.field().len(), e.grid_size() * e.grid_size() * 2);
+        assert_eq!(e.ink().len(), e.grid_size() * e.grid_size());
     }
 }
