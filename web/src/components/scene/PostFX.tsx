@@ -23,7 +23,7 @@ export function PostFX({ quality }: { quality: "high" | "low" }) {
     const color = scenePass.getTextureNode("output");
     // Bloom is dropped for the white theme (it only washes the page out); a
     // light lens fringe that swells with cursor energy, plus fine grain, remain.
-    const aberration = uniform(0.2);
+    const aberration = uniform(0.04);
     const lens = chromaticAberration(color, aberration, vec2(0.5), float(1.05));
 
     const grade = Fn(() => {
@@ -44,7 +44,7 @@ export function PostFX({ quality }: { quality: "high" | "low" }) {
   useFrame(() => {
     if (!fx.current) return;
     const { pipeline, aberration } = fx.current;
-    aberration.value = THREE.MathUtils.lerp(aberration.value, 0.2 + sceneState.energy * 0.8, 0.1);
+    aberration.value = THREE.MathUtils.lerp(aberration.value, 0.04 + sceneState.energy * 0.35, 0.1);
     pipeline.render();
   }, 1);
 

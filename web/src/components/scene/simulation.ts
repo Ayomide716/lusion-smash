@@ -85,12 +85,12 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
       start.set(shapes.initials.subarray(i * 4, i * 4 + 4), i * 4);
       continue;
     }
-    const r = 2.5 + Math.random() * 4;
+    // A wide, shallow disc behind the shape (never between it and the camera).
+    const r = 1.5 + Math.random() * 3.5;
     const th = Math.random() * Math.PI * 2;
-    const ph = Math.acos(2 * Math.random() - 1);
-    start[i * 4] = r * Math.sin(ph) * Math.cos(th);
-    start[i * 4 + 1] = r * Math.sin(ph) * Math.sin(th);
-    start[i * 4 + 2] = r * Math.cos(ph) - 2;
+    start[i * 4] = r * Math.cos(th) * 1.6;
+    start[i * 4 + 1] = r * Math.sin(th);
+    start[i * 4 + 2] = -1.5 - Math.random() * 2.5;
   }
 
   const positions = storage(new THREE.StorageInstancedBufferAttribute(start, 4), "vec4", count);
