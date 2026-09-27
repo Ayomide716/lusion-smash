@@ -126,6 +126,17 @@ export function TestimonialDeck({ items }: { items: Testimonial[] }) {
                   >
                     {t.context}
                   </Link>
+                ) : t.url ? (
+                  <a
+                    href={t.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    tabIndex={i === index ? undefined : -1}
+                    data-cursor="Open"
+                    className="text-accent underline decoration-accent/30 underline-offset-4 hover:decoration-accent"
+                  >
+                    {t.context} <span aria-hidden>↗</span>
+                  </a>
                 ) : (
                   <span className="text-muted">{t.context}</span>
                 )}

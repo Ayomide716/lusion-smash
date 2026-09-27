@@ -233,6 +233,8 @@ export type Testimonial = {
   context: string;
   /** Case study it's about, if there is one on the site. */
   project?: string;
+  /** Otherwise, the live site it's about. */
+  url?: string;
 };
 
 /**
@@ -257,14 +259,37 @@ export const testimonials: Testimonial[] = [
   {
     quote:
       "Ayomide was easy to talk to from day one and took the time to understand what I needed. He cared about the small details, so everything looked polished, and the whole process was smooth. I'd recommend him to anyone who needs a reliable website designer.",
-    name: "Rapheal",
+    name: "Raphael",
     context: "Author Lab",
+    url: "https://ralphweb.vercel.app",
   },
   {
     quote:
       "I had a clear picture of how my author website should look, and Ayomide followed it to the letter. My books, my author story and every key section are presented exactly the way I asked, and it still feels polished and professional.",
     name: "John Stewart",
-    context: "Author website",
+    context: "Book marketing website",
+    url: "https://johnstewart.org",
+  },
+];
+
+/**
+ * Live client sites without a full case study. Descriptions come from what
+ * each client said about the work (see `testimonials`), nothing more.
+ */
+export const moreWork = [
+  {
+    title: "Author Lab",
+    client: "Raphael",
+    kind: "Book marketing website",
+    note: "Built with close attention to the small details, so every page feels polished.",
+    url: "https://ralphweb.vercel.app",
+  },
+  {
+    title: "John Stewart",
+    client: "John Stewart",
+    kind: "Book marketing website",
+    note: "His books, author story and key sections, presented exactly to his brief.",
+    url: "https://johnstewart.org",
   },
 ];
 
@@ -309,7 +334,7 @@ export const experience = [
     role: "Freelance Full-stack Developer",
     period: "2026 — Present",
     summary:
-      "Designing and shipping web and mobile products end to end, from the database and payments to the interface: a freelance marketplace with escrow payments (NaijaHustle), a grant-management app for Zion World Christian Center, a sales and inventory dashboard for Larshaun Party Packs, and a marketing site for book marketer Amelia Hart.",
+      "Designing and shipping web and mobile products end to end, from the database and payments to the interface: a freelance marketplace with escrow payments (NaijaHustle), a grant-management app for Zion World Christian Center, a sales and inventory dashboard for Larshaun Party Packs, and book marketing websites for Amelia Hart, Raphael (Author Lab) and author John Stewart.",
   },
 ];
 
