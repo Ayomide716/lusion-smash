@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { projects, site } from "@/content/site";
+import { projects, site, testimonials } from "@/content/site";
 import { Reveal } from "@/components/Reveal";
 import { CountUp } from "@/components/motion/CountUp";
 import { SplitReveal } from "@/components/motion/SplitReveal";
@@ -30,6 +30,7 @@ export default async function CaseStudy({ params }: PageProps<"/work/[slug]">) {
   if (index === -1) notFound();
   const project = projects[index];
   const next = projects[(index + 1) % projects.length];
+  const quote = testimonials.find((t) => t.project === project.slug);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
@@ -140,6 +141,22 @@ export default async function CaseStudy({ params }: PageProps<"/work/[slug]">) {
             </div>
           )}
         </Reveal>
+        {quote && (
+          <Reveal className="mt-12">
+            <figure className="glass relative overflow-hidden rounded-3xl p-8 md:p-10">
+              <span aria-hidden className="pointer-events-none absolute top-6 left-6 font-display text-[7rem] leading-[0.75] text-accent/25 select-none">
+                “
+              </span>
+              <blockquote className="relative mt-14 max-w-3xl font-display text-xl leading-snug font-medium tracking-tight text-balance md:text-3xl">
+                {quote.quote}
+              </blockquote>
+              <figcaption className="relative mt-6 text-sm">
+                <span className="font-semibold">{quote.name}</span>
+                <span className="text-muted"> · {quote.context}</span>
+              </figcaption>
+            </figure>
+          </Reveal>
+        )}
         <ul className="mt-12 grid gap-5 sm:grid-cols-3">
           {project.metrics.map((m, i) => (
             <li key={m.label}>

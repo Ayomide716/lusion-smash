@@ -226,6 +226,17 @@ export const projects: Project[] = [
   },
 ];
 
+/** Client words, verbatim. `project` links to the case study it's about. */
+export const testimonials = [
+  {
+    quote:
+      "Working with Ayomide was a seamless experience. He delivered a fast, reliable, and user-friendly web app tailored to our exact needs. Everything works as expected, and the platform has made managing our operations much easier.",
+    name: "Mr Fred",
+    context: "ZWCC Business Grant",
+    project: "zwcc-business-grant",
+  },
+] as const;
+
 /** What clients can hire me for; each points at the project that proves it. */
 export const services = [
   {
