@@ -207,6 +207,16 @@ html.no-intro .intro-curtain {
   }
 }
 
+/* Testimonial deck: the active client's progress bar. */
+@keyframes deck-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* Another visitor's cursor: a slow breathing ring. */
 @keyframes peer {
   0%,

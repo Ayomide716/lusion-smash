@@ -226,8 +226,20 @@ export const projects: Project[] = [
   },
 ];
 
-/** Client words, verbatim. `project` links to the case study it's about. */
-export const testimonials = [
+export type Testimonial = {
+  quote: string;
+  name: string;
+  /** What the work was, shown under the name. */
+  context: string;
+  /** Case study it's about, if there is one on the site. */
+  project?: string;
+};
+
+/**
+ * Client words. Mr Fred's is verbatim; the others are lightly edited for length
+ * from what the clients sent, without adding anything they didn't say.
+ */
+export const testimonials: Testimonial[] = [
   {
     quote:
       "Working with Ayomide was a seamless experience. He delivered a fast, reliable, and user-friendly web app tailored to our exact needs. Everything works as expected, and the platform has made managing our operations much easier.",
@@ -235,7 +247,26 @@ export const testimonials = [
     context: "ZWCC Business Grant",
     project: "zwcc-business-grant",
   },
-] as const;
+  {
+    quote:
+      "Ayomide understood exactly what I wanted for my book marketing website and brought it to life better than I imagined. It's clean, professional and easy to navigate, and he was quick to respond whenever I had feedback. I'm really happy with the result.",
+    name: "Amelia Hart",
+    context: "Book marketing website",
+    project: "amelia-hart",
+  },
+  {
+    quote:
+      "Ayomide was easy to talk to from day one and took the time to understand what I needed. He cared about the small details, so everything looked polished, and the whole process was smooth. I'd recommend him to anyone who needs a reliable website designer.",
+    name: "Rapheal",
+    context: "Author Lab",
+  },
+  {
+    quote:
+      "I had a clear picture of how my author website should look, and Ayomide followed it to the letter. My books, my author story and every key section are presented exactly the way I asked, and it still feels polished and professional.",
+    name: "John Stewart",
+    context: "Author website",
+  },
+];
 
 /** What clients can hire me for; each points at the project that proves it. */
 export const services = [
