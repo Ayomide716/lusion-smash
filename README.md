@@ -9,9 +9,10 @@ my initials, then morph into a new shape for each section as you scroll, and swi
 |---|---|
 | `web/` | Next.js 16 site (TypeScript, Tailwind CSS 4, React Three Fiber, three.js WebGPU + TSL) |
 | `engine/` | Rust + C++ → one WebAssembly module: cursor dynamics and a Navier–Stokes fluid solver |
+| `services/mood/` | Python (FastAPI): Lagos time of day + live weather → scene palette and turbulence |
+| `services/presence/` | Go WebSocket hub: other visitors' cursors and a live "here now" count |
+| `render.yaml` | Render Blueprint that deploys both services on the free plan |
 | `.claude/skills/` | Claude Code skills for three.js / WebGPU / TSL work |
-
-Planned (needs a server host): `services/mood` (Python FastAPI), `services/presence` (Go WebSockets).
 
 ## How the scene works
 
@@ -22,7 +23,7 @@ Planned (needs a server host): `services/mood` (Python FastAPI), `services/prese
   Any element with `data-shape="…"` (plus optional `data-shape-x`, `data-shape-y`, `data-shape-scale`) drives the morph.
 - **Fluid** (`engine/`): a stable-fluids solver in freestanding C++ (advection, pressure projection with
   warm-started SOR, vorticity confinement) linked into a Rust crate that smooths the cursor with a critically
-  damped spring, runs a fixed 60 Hz clock and packs the velocity field into half floats. The 27 KB `.wasm` has no
+  damped spring, runs a fixed 60 Hz clock and packs the velocity field into half floats. The 28 KB `.wasm` has no
   imports and no JS glue; `web/src/lib/engine.ts` reads the field through a zero-copy view of wasm memory and the
   compute kernel samples it as a texture, so particles are carried by the flow behind your cursor.
 - **Post-processing** (`PostFX.tsx`): a light chromatic aberration that swells with cursor energy, plus film grain,
@@ -74,6 +75,39 @@ rustup target add wasm32-unknown-unknown   # once; also needs clang for the C++ 
 cargo run --release --example bench --manifest-path engine/Cargo.toml
 ```
 
+## Live services (optional)
+
+Both are optional: without their URLs, or while a free server is waking up, the site keeps its default look
+and nothing errors.
+
+- **Mood** (`services/mood`, Python/FastAPI): `GET /mood` returns Lagos's phase of day (dawn/day/dusk/night,
+  from the real sunrise and sunset), the current weather from [Open-Meteo](https://open-meteo.com) (free, no key;
+  cached for 10 minutes, stale copy served if it's down) and bounded scene parameters. The site eases into a
+  time-of-day tint, more turbulence when it's windy, a calmer field in rain and soft flashes in a storm, and the
+  footer shows the weather.
+- **Presence** (`services/presence`, Go): `GET /ws` WebSocket. Clients send only their cursor in viewport
+  coordinates; the server broadcasts at 10 Hz (only when something changed) the count and up to 12 other cursors,
+  with random per-connection ids. Other visitors appear as faint rings, and the WebAssembly engine's
+  `engine_stir` lays their paths into the fluid, so they ripple the particles and ink. Limits: 128-byte messages,
+  20 updates/s per connection (flooders are disconnected), `MAX_CLIENTS` connections, and only `ALLOWED_ORIGINS`
+  may connect from a browser.
+
+Run and test locally:
+
+```bash
+cd services/mood && uv venv && uv pip install -r requirements-dev.txt && .venv/bin/pytest
+.venv/bin/uvicorn app.main:app --port 8001
+
+cd services/presence && go test -race ./...
+PORT=8002 ALLOWED_ORIGINS=localhost:3000 go run .
+
+# then, in web/: NEXT_PUBLIC_MOOD_URL=http://localhost:8001 NEXT_PUBLIC_PRESENCE_URL=http://localhost:8002 npm run dev
+```
+
+Deploy: on [render.com](https://render.com) choose **New → Blueprint**, pick this repo and **Apply** (enter your
+site's domain for `ALLOWED_ORIGINS`, e.g. `your-site.vercel.app`). Then add the two service URLs to Vercel as
+`NEXT_PUBLIC_MOOD_URL` and `NEXT_PUBLIC_PRESENCE_URL` and redeploy.
+
 ## Environment variables (all optional)
 
 | Variable | Purpose |
@@ -82,6 +116,8 @@ cargo run --release --example bench --manifest-path engine/Cargo.toml
 | `RESEND_API_KEY` | Enables contact-form email via [Resend](https://resend.com); without it messages are logged |
 | `CONTACT_TO_EMAIL` | Where contact messages go (defaults to the email in `site.ts`) |
 | `CONTACT_FROM_EMAIL` | Verified sender address in Resend |
+| `NEXT_PUBLIC_MOOD_URL` | Mood service base URL, e.g. `https://ayomide-mood.onrender.com` |
+| `NEXT_PUBLIC_PRESENCE_URL` | Presence service base URL, e.g. `https://ayomide-presence.onrender.com` |
 
 ## Deploy (Vercel, free Hobby plan)
 

@@ -1,0 +1,34 @@
+# Render Blueprint for the two optional live services (step 4).
+# On render.com: New → Blueprint → pick this repo → Apply.
+# Both run on the free plan; they sleep after ~15 minutes without traffic and
+# wake on the next visit (the site keeps working while they wake).
+services:
+  - type: web
+    name: ayomide-mood
+    runtime: python
+    rootDir: services/mood
+    plan: free
+    region: frankfurt # closest Render region to Lagos
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+
+  - type: web
+    name: ayomide-presence
+    runtime: go
+    rootDir: services/presence
+    plan: free
+    region: frankfurt
+    buildCommand: go build -o presence .
+    startCommand: ./presence
+    healthCheckPath: /healthz
+    envVars:
+      # Sites allowed to connect, e.g. "your-site.vercel.app,ayomide.dev".
+      # Render asks for this when you apply the Blueprint.
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: MAX_CLIENTS
+        value: "200"

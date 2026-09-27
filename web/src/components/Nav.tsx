@@ -7,6 +7,7 @@ import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { SoundToggle } from "@/components/SoundToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { MobileMenu } from "@/components/MobileMenu";
+import { LiveCount } from "@/components/LiveCount";
 
 const links = [
   { href: "/#work", label: "Work" },
@@ -59,6 +60,7 @@ export function Nav() {
           ))}
         </ul>
         <div className="flex items-center gap-2">
+          <LiveCount className="hidden lg:inline-flex" />
           <SoundToggle />
           <ThemeToggle />
           <Link

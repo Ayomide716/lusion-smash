@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { site } from "@/content/site";
 import { LocalTime } from "@/components/motion/LocalTime";
+import { LagosWeather } from "@/components/LagosWeather";
+import { LiveCount } from "@/components/LiveCount";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { Wordmark } from "@/components/motion/Wordmark";
 
@@ -14,6 +16,7 @@ export function Footer() {
             <p className="mt-2 text-base text-fg">
               <LocalTime timeZone="Africa/Lagos" /> <span className="text-muted">WAT</span>
             </p>
+            <LagosWeather className="mt-1 block text-muted" />
           </div>
           <div>
             <p className="font-mono text-[11px] tracking-widest uppercase">Status</p>
@@ -21,6 +24,7 @@ export function Footer() {
               <span aria-hidden className="size-2 rounded-full bg-accent" />
               {site.availability}
             </p>
+            <LiveCount className="-ml-3 mt-1" />
           </div>
           <div>
             <p className="font-mono text-[11px] tracking-widest uppercase">Elsewhere</p>

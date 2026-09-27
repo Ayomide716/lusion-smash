@@ -207,6 +207,17 @@ html.no-intro .intro-curtain {
   }
 }
 
+/* Another visitor's cursor: a slow breathing ring. */
+@keyframes peer {
+  0%,
+  100% {
+    scale: 0.8;
+  }
+  50% {
+    scale: 1.15;
+  }
+}
+
 @keyframes eq {
   from {
     height: 3px;

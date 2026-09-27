@@ -12,6 +12,7 @@ type EngineExports = {
   engine_ink_ptr(): number;
   engine_ink_len(): number;
   engine_state_len(): number;
+  engine_stir?(x0: number, y0: number, x1: number, y1: number, dt: number, aspect: number): void;
 };
 
 export type Engine = {
@@ -24,6 +25,8 @@ export type Engine = {
   /** See `engine/src/lib.rs` `state` module for the layout. */
   state: Float32Array;
   frame(dt: number, x: number, y: number, active: boolean, aspect: number): void;
+  /** Another visitor's cursor moved from (x0, y0) to (x1, y1), NDC, over `dt` s: stir the fluid gently. */
+  stir(x0: number, y0: number, x1: number, y1: number, dt: number, aspect: number): void;
   /** Rolling average of `frame` cost in milliseconds. */
   stepMs: number;
 };
@@ -76,6 +79,10 @@ async function instantiate(url: string): Promise<Engine> {
       // Views detach if linear memory ever grows; rebuild them if so.
       if (engine.field.byteLength === 0) Object.assign(engine, views());
       engine.stepMs += (performance.now() - start - engine.stepMs) * 0.05;
+    },
+    stir(x0, y0, x1, y1, dt, aspect) {
+      // Absent in engine builds older than the presence feature (e.g. a cached .wasm).
+      wasm.engine_stir?.(x0, y0, x1, y1, dt, aspect);
     },
   };
   return engine;

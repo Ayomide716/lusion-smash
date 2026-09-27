@@ -24,6 +24,7 @@ import {
 import { buildShapes, SHAPES, textShape, type ShapeName } from "./shapes";
 import { sceneState, setStats } from "@/lib/scene-store";
 import { FIELD_SIZE, STATE, type Engine } from "@/lib/engine";
+import { peers } from "@/lib/presence";
 
 export type SimulationOptions = {
   count: number;
@@ -169,6 +170,9 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     wordScale: uniform(1),
     wordOffset: uniform(new THREE.Vector3()),
     tilt: uniform(new THREE.Vector2()),
+    /** Mood service tint (linear RGB) and how far the palette leans into it. */
+    moodTint: uniform(new THREE.Color(0.838, 0.064, 0.319)),
+    moodMix: uniform(0),
   };
 
   const pick = (idx: typeof u.from) => {
@@ -278,7 +282,10 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
   const base = mix(pink, blush, seed.mul(0.55).add(posAttr.y.mul(0.08)).saturate());
   const fast = mix(base, rose, speed.mul(0.35).add(u.energy.mul(0.3)).saturate());
   const shimmer = seed.add(posAttr.x.mul(0.15)).add(time.mul(0.05)).mul(Math.PI * 2).sin().mul(0.5).add(0.5).pow(3);
-  const tint = mix(fast, magenta, shimmer.mul(0.35));
+  const shimmered = mix(fast, magenta, shimmer.mul(0.35));
+  // Mood: lean towards the time-of-day tint, keeping per-particle variation.
+  const moodColor = u.moodTint.mul(seed.mul(0.5).add(0.75));
+  const tint = mix(shimmered, moodColor, u.moodMix.mul(0.7));
   const disc = uv().sub(0.5).length().mul(2).oneMinus().saturate().pow(1.25);
 
   material.positionNode = posAttr;
@@ -295,6 +302,10 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     sprite,
     reducedMotion,
     u,
+    baseTurbulence: u.turbulence.value,
+    /** Mood values as currently shown, easing towards `sceneState.mood`. */
+    mood: { turbulence: 1, calm: 1, energy: 0, tintMix: 0, tint: [0.838, 0.064, 0.319] },
+    nextStorm: 0,
     pointerLast: { x: 0, y: 0 },
     fps: { frames: 0, elapsed: 0 },
     fieldTex,
@@ -417,9 +428,43 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   u.shockAge.value = shock.age;
   u.shockPos.value.set(shock.x * halfW, shock.y * halfH);
 
+  // Mood (Lagos time of day and weather): ease over a few seconds, never snap.
+  const mood = sim.mood;
+  const target = sceneState.mood;
+  const k = 1 - Math.exp(-dt * 0.6);
+  mood.turbulence += (target.turbulence - mood.turbulence) * k;
+  mood.calm += (target.calm - mood.calm) * k;
+  mood.energy += (target.energy - mood.energy) * k;
+  mood.tintMix += (target.tintMix - mood.tintMix) * k;
+  for (let i = 0; i < 3; i++) mood.tint[i] += (target.tint[i] - mood.tint[i]) * k;
+  u.turbulence.value = sim.baseTurbulence * mood.turbulence;
+  u.moodMix.value = mood.tintMix;
+  u.moodTint.value.setRGB(mood.tint[0], mood.tint[1], mood.tint[2]);
+  // Storms: now and then a soft flash ripples through the field.
+  if (mood.energy > 0.2 && !reducedMotion && now > sim.nextStorm) {
+    if (sim.nextStorm > 0 && shock.age > 3) {
+      shock.x = Math.random() * 1.6 - 0.8;
+      shock.y = Math.random() * 1.2 - 0.6;
+      shock.age = 0;
+    }
+    sim.nextStorm = now + 7 + Math.random() * 8;
+  }
+
+  // Other visitors: glide towards their latest reported position and stir the
+  // fluid along the way, so their cursors ripple the particles and the ink.
+  const glide = 1 - Math.exp(-dt * 10);
+  for (const peer of peers.values()) {
+    const x = peer.x + (peer.tx - peer.x) * glide;
+    const y = peer.y + (peer.ty - peer.y) * glide;
+    if (engine && !reducedMotion) engine.stir(peer.x, peer.y, x, y, dt, aspect);
+    peer.x = x;
+    peer.y = y;
+  }
+
   sceneState.energy = Math.max(0, sceneState.energy - dt * 0.8);
-  u.energy.value = THREE.MathUtils.lerp(u.energy.value, sceneState.energy, 0.08);
-  u.dt.value = dt;
+  u.energy.value = THREE.MathUtils.lerp(u.energy.value, Math.max(sceneState.energy, mood.energy), 0.08);
+  // Rain slows the whole field slightly; a clear day runs at normal speed.
+  u.dt.value = dt * mood.calm;
 
   gl.compute(sim.update);
 

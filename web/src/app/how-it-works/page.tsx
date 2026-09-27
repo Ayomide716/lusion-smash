@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ServiceStatus } from "@/components/ServiceStatus";
 import { LiveStats } from "@/components/LiveStats";
 import { Reveal } from "@/components/Reveal";
 
@@ -7,7 +8,9 @@ export const metadata: Metadata = {
   description: "The architecture behind this portfolio: WebGPU compute, TSL shaders, Rust/WASM, Go and Python.",
 };
 
-const layers = [
+type Layer = { lang: string; status: "Live" | "mood" | "presence"; role: string; body: string };
+
+const layers: Layer[] = [
   {
     lang: "TSL → GLSL / WGSL",
     status: "Live",
@@ -42,19 +45,19 @@ const layers = [
     lang: "Rust → WebAssembly",
     status: "Live",
     role: "Engine core",
-    body: "Owns the safe boundary around the solver, a critically damped spring that smooths your cursor, a fixed 60 Hz simulation clock, and half-float packing. The whole engine is one 26 KB module with zero imports; JavaScript reads the flow field through a zero-copy view of its memory and hands it to the GPU as a texture.",
+    body: "Owns the safe boundary around the solver, a critically damped spring that smooths your cursor, a fixed 60 Hz simulation clock, and half-float packing. It also lays other visitors' cursor paths into the same fluid, more gently than yours. The whole engine is one 28 KB module with zero imports; JavaScript reads the flow field through a zero-copy view of its memory and hands it to the GPU as a texture.",
   },
   {
     lang: "Python (FastAPI)",
-    status: "Next",
+    status: "mood",
     role: "Mood service",
-    body: "Picks the scene's palette and turbulence from real-world signals like the visitor's local time of day.",
+    body: "Reads the time of day and live weather in Lagos (Open-Meteo, cached so the free API is asked at most every ten minutes) and turns them into scene parameters: warmer pinks at dawn, deeper fuchsia at night, more turbulence when it's windy, a slower, calmer field when it rains, and soft flashes during a storm. The footer shows the weather it's using.",
   },
   {
     lang: "Go",
-    status: "Next",
+    status: "presence",
     role: "Realtime presence",
-    body: "A WebSocket hub that shares other visitors' cursors, so you see their ripples in the same particle field.",
+    body: "A WebSocket hub that shares anonymous cursor positions between people here at the same time: theirs appear as faint rings that stir the fluid and ripple the particles, with a live count in the nav. Nothing else is sent (no names, no IPs), connections are rate-limited and capped, and only this site's origins may connect.",
   },
 ];
 
@@ -84,13 +87,11 @@ export default function HowItWorks() {
               <Reveal delay={(i % 2) * 0.06} className="glass h-full rounded-3xl p-6 md:p-8">
                 <div className="flex items-center justify-between gap-4">
                   <p className="font-mono text-xs tracking-widest text-muted uppercase">{l.role}</p>
-                  <span
-                    className={`rounded-full px-2.5 py-1 font-mono text-[11px] ${
-                      l.status === "Live" ? "bg-accent/15 text-accent" : "bg-fg/5 text-fg/60"
-                    }`}
-                  >
-                    {l.status}
-                  </span>
+                  {l.status === "Live" ? (
+                    <span className="rounded-full bg-accent/15 px-2.5 py-1 font-mono text-[11px] text-accent">Live</span>
+                  ) : (
+                    <ServiceStatus service={l.status} />
+                  )}
                 </div>
                 <h2 className="mt-5 text-2xl font-semibold tracking-tight">{l.lang}</h2>
                 <p className="mt-3 text-fg/70">{l.body}</p>

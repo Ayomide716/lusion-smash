@@ -29,6 +29,18 @@ export const sceneState = {
   word: null as string | null,
   /** Device tilt on phones, -1..1 per axis. */
   tilt: { x: 0, y: 0 },
+  /**
+   * Targets from the mood service (Lagos time of day and weather); the scene
+   * eases towards them. Defaults are the site's own look.
+   */
+  mood: {
+    turbulence: 1,
+    calm: 1,
+    energy: 0,
+    tintMix: 0,
+    /** Linear RGB. */
+    tint: [0.838, 0.064, 0.319] as [number, number, number],
+  },
 };
 
 export function getStats(): SceneStats {

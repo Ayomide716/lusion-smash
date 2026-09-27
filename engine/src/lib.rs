@@ -32,6 +32,8 @@ const VORTICITY: f32 = 18.0;
 /// Fraction of ink kept per second, and ink laid per unit of pointer speed.
 const DYE_DECAY: f32 = 0.18;
 const DYE_PER_SPEED: f32 = 0.9;
+/// Other visitors' cursors (see `engine_stir`) stir the same fluid, more gently.
+const PEER_GAIN: f32 = 0.55;
 
 /// Layout of the state block exposed to JavaScript.
 pub mod state {
@@ -110,30 +112,53 @@ impl Engine {
         self.pointer.update([x, y], active, FIXED_DT);
 
         if active && was_tracking {
-            // Lay splats along the whole segment so fast flicks leave a
-            // continuous wake instead of a dotted line.
-            let to = self.pointer.position;
-            let (dx, dy) = ((to[0] - from[0]) * 0.5, (to[1] - from[1]) * 0.5); // NDC → uv
-            let length = (dx * dx * aspect * aspect + dy * dy).sqrt();
-            let count = ((length / SPLAT_SPACING).ceil() as usize).clamp(1, MAX_SPLATS_PER_STEP);
             let v = self.pointer.velocity;
-            let fx = (v[0] * 0.5 * FORCE_SCALE / count as f32).clamp(-MAX_SPLAT_FORCE, MAX_SPLAT_FORCE);
-            let fy = (v[1] * 0.5 * FORCE_SCALE / count as f32).clamp(-MAX_SPLAT_FORCE, MAX_SPLAT_FORCE);
-            let speed = (v[0] * v[0] + v[1] * v[1]).sqrt();
-            let ink = (speed * DYE_PER_SPEED * FIXED_DT * 6.0 / count as f32).min(0.5);
-            for k in 1..=count {
-                let t = k as f32 / count as f32;
-                let u = (from[0] + (to[0] - from[0]) * t) * 0.5 + 0.5;
-                let w = (from[1] + (to[1] - from[1]) * t) * 0.5 + 0.5;
-                self.fluid.splat(u, w, fx, fy, SPLAT_RADIUS, aspect);
-                if ink > 0.0 {
-                    self.fluid.splat_dye(u, w, ink, SPLAT_RADIUS * 0.7, aspect);
-                }
-            }
+            self.stroke(from, self.pointer.position, v, aspect, 1.0);
         }
 
         self.fluid.step(FIXED_DT, DECAY, VORTICITY, DYE_DECAY);
         self.sim_time += FIXED_DT;
+    }
+
+    /// Lay splats along the whole segment (NDC) so fast flicks leave a
+    /// continuous wake instead of a dotted line. `v` is the stroke velocity in
+    /// NDC per second; `gain` scales both force and ink.
+    fn stroke(&mut self, from: [f32; 2], to: [f32; 2], v: [f32; 2], aspect: f32, gain: f32) {
+        let (dx, dy) = ((to[0] - from[0]) * 0.5, (to[1] - from[1]) * 0.5); // NDC → uv
+        let length = (dx * dx * aspect * aspect + dy * dy).sqrt();
+        let count = ((length / SPLAT_SPACING).ceil() as usize).clamp(1, MAX_SPLATS_PER_STEP);
+        let fx = (v[0] * 0.5 * FORCE_SCALE * gain / count as f32).clamp(-MAX_SPLAT_FORCE, MAX_SPLAT_FORCE);
+        let fy = (v[1] * 0.5 * FORCE_SCALE * gain / count as f32).clamp(-MAX_SPLAT_FORCE, MAX_SPLAT_FORCE);
+        let speed = (v[0] * v[0] + v[1] * v[1]).sqrt();
+        let ink = (speed * DYE_PER_SPEED * FIXED_DT * 6.0 * gain / count as f32).min(0.5);
+        for k in 1..=count {
+            let t = k as f32 / count as f32;
+            let u = (from[0] + (to[0] - from[0]) * t) * 0.5 + 0.5;
+            let w = (from[1] + (to[1] - from[1]) * t) * 0.5 + 0.5;
+            self.fluid.splat(u, w, fx, fy, SPLAT_RADIUS, aspect);
+            if ink > 0.0 {
+                self.fluid.splat_dye(u, w, ink, SPLAT_RADIUS * 0.7, aspect);
+            }
+        }
+    }
+
+    /// Another visitor's cursor moved from `from` to `to` (NDC) over `dt`
+    /// seconds: stir the fluid along that path, more gently than the local
+    /// pointer. Takes effect on the next `frame`.
+    pub fn stir(&mut self, from: [f32; 2], to: [f32; 2], dt: f32, aspect: f32) {
+        let finite = |p: [f32; 2]| p[0].is_finite() && p[1].is_finite();
+        if !finite(from) || !finite(to) || !(dt > 0.0) || !dt.is_finite() {
+            return;
+        }
+        let clamp = |p: [f32; 2]| [p[0].clamp(-1.0, 1.0), p[1].clamp(-1.0, 1.0)];
+        let (from, to) = (clamp(from), clamp(to));
+        let aspect = if aspect.is_finite() && aspect > 0.0 { aspect } else { 1.0 };
+        let dt = dt.max(FIXED_DT);
+        let v = [(to[0] - from[0]) / dt, (to[1] - from[1]) / dt];
+        if v[0] == 0.0 && v[1] == 0.0 {
+            return;
+        }
+        self.stroke(from, to, v, aspect, PEER_GAIN);
     }
 
     /// Pack the interior of the grid into interleaved RG half floats (row 0 = bottom).
@@ -205,6 +230,12 @@ pub extern "C" fn engine_init() -> u32 {
 #[no_mangle]
 pub extern "C" fn engine_frame(dt: f32, x: f32, y: f32, active: u32, aspect: f32) {
     with_engine(|e| e.frame(dt, x, y, active != 0, aspect));
+}
+
+/// Another visitor's cursor moved from (x0, y0) to (x1, y1), NDC, over `dt` seconds.
+#[no_mangle]
+pub extern "C" fn engine_stir(x0: f32, y0: f32, x1: f32, y1: f32, dt: f32, aspect: f32) {
+    with_engine(|e| e.stir([x0, y0], [x1, y1], dt, aspect));
 }
 
 #[no_mangle]
@@ -324,6 +355,33 @@ mod tests {
         // A long stall is capped instead of simulating seconds at once.
         e.frame(2.0, 0.0, 0.0, false, 1.0);
         assert_eq!(e.state()[state::STEPS], MAX_STEPS_PER_FRAME as f32);
+    }
+
+    #[test]
+    fn peer_stir_moves_fluid_gently_and_ignores_garbage() {
+        let _g = SOLVER.lock().unwrap();
+        let mut e = Engine::new();
+        for k in 0..30 {
+            let t = k as f32 / 30.0;
+            e.stir([-0.5 + t, 0.0], [-0.5 + t + 1.0 / 30.0, 0.0], 1.0 / 60.0, 16.0 / 9.0);
+            e.frame(1.0 / 60.0, 0.0, 0.0, false, 16.0 / 9.0);
+        }
+        let stirred = peak(&e);
+        assert!(stirred > 0.01, "a moving peer should stir the fluid, got {stirred}");
+        assert!(e.ink().iter().any(|&d| d > 0), "a moving peer should leave ink");
+
+        // A local drag of the same path is stronger than a peer's.
+        let mut local = Engine::new();
+        drag(&mut local, 30);
+        assert!(peak(&local) > stirred, "peers should be gentler than the local cursor");
+
+        let mut g = Engine::new();
+        g.stir([f32::NAN, 0.0], [0.5, 0.5], 1.0 / 60.0, 1.0);
+        g.stir([0.0, 0.0], [0.5, 0.5], f32::INFINITY, 1.0);
+        g.stir([0.0, 0.0], [0.5, 0.5], -1.0, 1.0);
+        g.stir([0.2, 0.2], [0.2, 0.2], 1.0 / 60.0, 1.0);
+        g.frame(1.0 / 60.0, 0.0, 0.0, false, 1.0);
+        assert_eq!(peak(&g), 0.0, "invalid or motionless stirs must do nothing");
     }
 
     #[test]
