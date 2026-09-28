@@ -61,34 +61,59 @@ function isSoftwareRenderer(renderer: THREE.WebGPURenderer) {
   return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
 }
 
+const COARSE = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+/** Highest pixel ratio the particles render at: phones trade a little sharpness for smoothness. */
+const MAX_DPR = COARSE ? 1.25 : 1.75;
+
 /**
- * Frame-rate watchdog: after a warm-up, drop to 1× pixel ratio if the scene is
- * slow, and give up on it (static backdrop) if it's still too slow after that.
+ * Frame-rate governor. At start-up it gives up on devices that can't run the
+ * scene at all (static backdrop instead). After that it keeps adjusting the
+ * render resolution for the whole visit: lower when frames are being dropped,
+ * back up when there's headroom, so scrolling stays smooth on every device.
  */
 function useFrameWatchdog(onGiveUp: (reason: string) => void) {
   const setDpr = useThree((s) => s.setDpr);
   // An explicit ?renderer= choice (debugging, testing) disables the watchdog.
-  const w = useRef({ frames: 0, elapsed: 0, stage: new URLSearchParams(window.location.search).has("renderer") ? 2 : 0 });
+  const off = new URLSearchParams(window.location.search).has("renderer");
+  const w = useRef({ frames: 0, elapsed: 0, stage: off ? 3 : 0, dpr: Math.min(window.devicePixelRatio || 1, MAX_DPR), good: 0 });
   useFrame((_, delta) => {
     const s = w.current;
-    if (s.stage >= 2 || document.hidden) return;
+    if (s.stage >= 3 || document.hidden) return;
     s.frames++;
     s.elapsed += Math.min(delta, 1);
-    if (s.elapsed < 3) return;
+    if (s.elapsed < (s.stage < 2 ? 3 : 1.5)) return;
     const fps = s.frames / s.elapsed;
     s.frames = 0;
     s.elapsed = 0;
-    if (fps >= 30) {
-      s.stage = 2; // healthy; stop watching
-    } else if (s.stage === 0) {
-      s.stage = 1;
-      setDpr(1);
-    } else if (fps < 20) {
-      s.stage = 2;
-      onGiveUp(`sustained ${fps.toFixed(1)} fps`);
-    } else {
-      s.stage = 2;
+    if (s.stage === 0) {
+      // Start-up check.
+      if (fps >= 30) s.stage = 2;
+      else {
+        s.stage = 1;
+        s.dpr = 1;
+        setDpr(1);
+      }
+      return;
     }
+    if (s.stage === 1) {
+      if (fps < 20) {
+        s.stage = 3;
+        onGiveUp(`sustained ${fps.toFixed(1)} fps`);
+      } else s.stage = 2;
+      return;
+    }
+    // Ongoing: step the resolution down fast, back up slowly.
+    if (fps < 50 && s.dpr > 0.75) {
+      s.dpr = Math.max(0.75, s.dpr - 0.25);
+      s.good = 0;
+      setDpr(s.dpr);
+    } else if (fps > 57 && s.dpr < MAX_DPR) {
+      if (++s.good >= 3) {
+        s.dpr = Math.min(MAX_DPR, s.dpr + 0.25);
+        s.good = 0;
+        setDpr(s.dpr);
+      }
+    } else s.good = 0;
   });
 }
 
@@ -148,6 +173,10 @@ class SceneBoundary extends Component<{ children: ReactNode; onError: (error: un
 
 export default function SceneCanvas() {
   const [ready, setReady] = useState(false);
+  // Once particles are on screen, the animated fallback behind them is hidden (see globals.css).
+  useEffect(() => {
+    document.documentElement.dataset.scene = ready ? "on" : "off";
+  }, [ready]);
   const [backend, setBackend] = useState<Backend>(initialBackend);
   const [reducedMotion] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
@@ -252,7 +281,7 @@ export default function SceneCanvas() {
         <Canvas
           key={backend}
           flat
-          dpr={[1, 1.75]}
+          dpr={[1, MAX_DPR]}
           camera={{ position: [0, 0, 6], fov: 35, near: 0.1, far: 50 }}
           gl={async (props) => {
             if (backend === "webgpu") patchIdentitySwizzle();

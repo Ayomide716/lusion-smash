@@ -50,23 +50,48 @@ const wordCache = new Map<string, Float32Array>();
 
 type Section = { shape: number; x: number; y: number; scale: number };
 
-/** Read the `[data-shape]` sections and work out which two shapes to blend between. */
+// Section positions in document coordinates. Measuring them (getBoundingClientRect)
+// every frame forced a layout mid-frame, the main cause of scroll stutter; now
+// they're measured at most once a second, or when the page or its size changes.
+type Measured = Section & { docTop: number; el: HTMLElement };
+let measured: Measured[] = [];
+let measuredAt = -Infinity;
+let measuredHeight = 0;
+if (typeof window !== "undefined") {
+  window.addEventListener("resize", () => (measuredAt = -Infinity), { passive: true });
+}
+
+function measureSections() {
+  const now = performance.now();
+  const height = document.documentElement.scrollHeight;
+  const stale =
+    now - measuredAt > 1000 || height !== measuredHeight || (measured.length > 0 && !measured[0].el.isConnected);
+  if (!stale) return measured;
+  measuredAt = now;
+  measuredHeight = height;
+  const scrollY = window.scrollY;
+  measured = Array.from(document.querySelectorAll<HTMLElement>("[data-shape]"), (el) => ({
+    el,
+    docTop: el.getBoundingClientRect().top + scrollY,
+    shape: Math.max(0, SHAPES.indexOf(el.dataset.shape as ShapeName)),
+    x: Number(el.dataset.shapeX ?? 0),
+    y: Number(el.dataset.shapeY ?? 0),
+    scale: Number(el.dataset.shapeScale ?? 1),
+  }));
+  return measured;
+}
+
+/** Work out which two section shapes to blend between at the current scroll position. */
 function readScrollTargets(viewportH: number) {
-  const nodes = document.querySelectorAll<HTMLElement>("[data-shape]");
+  const nodes = measureSections();
   if (nodes.length === 0) return null;
   const anchor = viewportH * 0.6;
+  const scrollY = window.scrollY;
   let current = 0;
   const sections: (Section & { top: number })[] = [];
-  nodes.forEach((el, i) => {
-    const top = el.getBoundingClientRect().top;
-    const shape = Math.max(0, SHAPES.indexOf(el.dataset.shape as ShapeName));
-    sections.push({
-      shape,
-      x: Number(el.dataset.shapeX ?? 0),
-      y: Number(el.dataset.shapeY ?? 0),
-      scale: Number(el.dataset.shapeScale ?? 1),
-      top,
-    });
+  nodes.forEach((n, i) => {
+    const top = n.docTop - scrollY;
+    sections.push({ shape: n.shape, x: n.x, y: n.y, scale: n.scale, top });
     if (top <= anchor) current = i;
   });
   const from = sections[current];

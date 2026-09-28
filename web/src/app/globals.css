@@ -128,6 +128,30 @@ html[data-theme="dark"] {
   }
 }
 
+/* Phones: frosted-glass blur (backdrop-filter) is costly to composite over a
+   live WebGL canvas while scrolling, so glass becomes a near-solid fill there. */
+@media (pointer: coarse) {
+  * {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .glass {
+    background: var(--glass-solid, rgb(255 255 255 / 0.92));
+  }
+  header[data-scrolled] {
+    background: var(--glass-solid, rgb(255 255 255 / 0.92)) !important;
+  }
+}
+html[data-theme="dark"] {
+  --glass-solid: rgb(23 23 27 / 0.94);
+}
+
+/* The animated backdrop only shows while the scene boots or if it can't run;
+   once particles are drawn it stops animating (it was blurring every frame unseen). */
+html[data-scene="on"] .scene-fallback {
+  display: none;
+}
+
 /* Static backdrop behind the canvas while it boots, and if no GPU scene can run. */
 .scene-fallback {
   background:
