@@ -187,6 +187,53 @@ func TestRateLimitRefills(t *testing.T) {
 	}
 }
 
+func TestTapsReachOthersButNotTheTapper(t *testing.T) {
+	_, srv := startServer(t, 10, "ayomide.dev")
+	a := mustDial(t, srv)
+	b := mustDial(t, srv)
+	next(t, a, func(s snapshot) bool { return s.N == 2 })
+	next(t, b, func(s snapshot) bool { return s.N == 2 })
+
+	send(t, a, `{"t":[0.4,-0.2]}`)
+	s := next(t, b, func(s snapshot) bool { return len(s.R) > 0 })
+	if len(s.R) != 1 || s.R[0] != [2]float64{0.4, -0.2} {
+		t.Fatalf("b should get a's tap at (0.4,-0.2), got %v", s.R)
+	}
+	// The tap is not a cursor: it doesn't show a ring for a.
+	if len(s.P) != 0 {
+		t.Fatalf("a tap must not create a cursor, got %v", s.P)
+	}
+	// a's own snapshot for that change carries no taps.
+	send(t, b, `{"x":0.1,"y":0.1}`)
+	own := next(t, a, func(s snapshot) bool { return len(s.P) == 1 })
+	if len(own.R) != 0 {
+		t.Fatalf("a should not receive its own tap, got %v", own.R)
+	}
+}
+
+func TestTapLimitsAndJunk(t *testing.T) {
+	h := NewHub(2)
+	now := time.Unix(0, 0)
+	h.now = func() time.Time { return now }
+	c := h.Join()
+	for _, junk := range []string{`{"t":[1e999,0]}`, `{"t":"x"}`, `{"t":[1]}`} {
+		h.Handle(c, []byte(junk))
+	}
+	if len(h.taps) != 0 {
+		t.Fatalf("junk taps should be ignored, got %v", h.taps)
+	}
+	h.Handle(c, []byte(`{"t":[5,-5]}`))
+	h.Handle(c, []byte(`{"t":[0,0]}`)) // too soon after the first
+	if len(h.taps) != 1 || h.taps[0].x != 1 || h.taps[0].y != -1 {
+		t.Fatalf("expected one clamped tap, got %v", h.taps)
+	}
+	now = now.Add(tapEvery)
+	h.Handle(c, []byte(`{"t":[0,0]}`))
+	if len(h.taps) != 2 {
+		t.Fatalf("a tap after the interval should count, got %d", len(h.taps))
+	}
+}
+
 func TestCountEndpoint(t *testing.T) {
 	_, srv := startServer(t, 10, "ayomide.dev")
 	mustDial(t, srv)

@@ -217,6 +217,44 @@ html.no-intro .intro-curtain {
   }
 }
 
+/* Another visitor's tap: a pink ring that expands and fades. */
+.peer-ripple {
+  position: absolute;
+  width: 3rem;
+  height: 3rem;
+  margin: -1.5rem 0 0 -1.5rem;
+  border-radius: 9999px;
+  border: 2px solid var(--color-accent);
+  background: radial-gradient(circle, rgb(236 72 153 / 0.18), transparent 70%);
+  animation: peer-ripple 1.4s var(--ease-out-expo) forwards;
+}
+
+@keyframes peer-ripple {
+  from {
+    opacity: 0.9;
+    scale: 0.3;
+  }
+  to {
+    opacity: 0;
+    scale: 4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .peer-ripple {
+    animation: peer-ripple-fade 1.2s ease-out forwards;
+  }
+}
+
+@keyframes peer-ripple-fade {
+  from {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 /* Another visitor's cursor: a slow breathing ring. */
 @keyframes peer {
   0%,

@@ -24,6 +24,17 @@ export type Peer = {
 /** Other visitors' cursors by id. Read and smoothed by the scene loop. */
 export const peers = new Map<number, Peer>();
 
+/** Another visitor tapped or clicked at (x, y), NDC. */
+type RippleListener = (x: number, y: number) => void;
+const rippleListeners = new Set<RippleListener>();
+
+export function onRipple(listener: RippleListener) {
+  rippleListeners.add(listener);
+  return () => {
+    rippleListeners.delete(listener);
+  };
+}
+
 let count = 0;
 /** "off": not configured; "connecting": trying (or the server is waking); "live": connected. */
 let status: "off" | "connecting" | "live" = BASE ? "connecting" : "off";
@@ -76,6 +87,14 @@ function onMessage(data: unknown) {
     return;
   }
   if (typeof msg.n === "number" && Number.isFinite(msg.n)) setCount(Math.max(0, Math.floor(msg.n)));
+  const taps = (msg as { r?: unknown }).r;
+  if (Array.isArray(taps)) {
+    for (const t of taps.slice(0, 8)) {
+      if (!Array.isArray(t) || t.length !== 2 || !t.every((v) => typeof v === "number" && Number.isFinite(v))) continue;
+      const [x, y] = t as [number, number];
+      rippleListeners.forEach((l) => l(Math.max(-1, Math.min(1, x)), Math.max(-1, Math.min(1, y))));
+    }
+  }
   if (!Array.isArray(msg.p)) return;
   const now = performance.now();
   const live = new Set<number>();
@@ -154,6 +173,23 @@ export function startPresence() {
       connect();
     }
   });
+
+  // Taps and clicks are shared as ripples (phones have no cursor to show).
+  let lastTap = 0;
+  window.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (socket?.readyState !== WebSocket.OPEN) return;
+      if ((e.target as Element | null)?.closest("input, textarea, select, label, [role=dialog]")) return;
+      const now = performance.now();
+      if (now - lastTap < 350) return;
+      lastTap = now;
+      const x = (e.clientX / window.innerWidth) * 2 - 1;
+      const y = -(e.clientY / window.innerHeight) * 2 + 1;
+      socket.send(JSON.stringify({ t: [+x.toFixed(3), +y.toFixed(3)] }));
+    },
+    { passive: true },
+  );
 
   // A tab left open on an unattended screen shouldn't count as someone here.
   const activity = () => {

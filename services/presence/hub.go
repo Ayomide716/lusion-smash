@@ -13,8 +13,10 @@ import (
 //
 //	client → server  {"x":0.12,"y":-0.4}   cursor in viewport NDC (-1..1, y up)
 //	                 {"x":null}            cursor left the page
-//	server → client  {"n":3,"p":[[id,x,y],...]}   visitors online and the
-//	                                              other visitors' cursors
+//	                 {"t":[0.1,0.3]}       a tap or click at that point
+//	server → client  {"n":3,"p":[[id,x,y],...],"r":[[x,y],...]}
+//	                 visitors online, the other visitors' cursors, and the
+//	                 other visitors' taps since the last snapshot
 //
 // Nothing else is exchanged: no names, no IPs, no page contents. Ids are
 // random per connection and mean nothing outside it.
@@ -26,17 +28,26 @@ const (
 	maxMessage     = 128                    // bytes per client message
 	ratePerSecond  = 20                     // cursor updates allowed per second
 	rateBurst      = 40
-	maxDropped     = 400 // over-limit messages tolerated before disconnecting
+	maxDropped     = 400                    // over-limit messages tolerated before disconnecting
+	tapEvery       = 300 * time.Millisecond // at most ~3 taps a second per visitor
+	maxTapsSent    = 8                      // taps per snapshot
 )
 
 type inbound struct {
-	X *float64 `json:"x"`
-	Y *float64 `json:"y"`
+	X *float64  `json:"x"`
+	Y *float64  `json:"y"`
+	T []float64 `json:"t"`
 }
 
 type snapshot struct {
 	N int          `json:"n"`
 	P [][3]float64 `json:"p"`
+	R [][2]float64 `json:"r,omitempty"`
+}
+
+type tap struct {
+	from *client
+	x, y float64
 }
 
 type client struct {
@@ -50,11 +61,13 @@ type client struct {
 	tokens  float64
 	refill  time.Time
 	dropped int
+	lastTap time.Time
 }
 
 type Hub struct {
 	mu      sync.Mutex
 	clients map[*client]struct{}
+	taps    []tap // since the last broadcast
 	max     int
 	version uint64 // bumps on any change, so idle rooms send nothing
 	now     func() time.Time
@@ -110,6 +123,19 @@ func (h *Hub) Handle(c *client, raw []byte) bool {
 	var m inbound
 	if json.Unmarshal(raw, &m) != nil {
 		return true // ignore junk, but it still cost a token
+	}
+	if m.T != nil {
+		if len(m.T) != 2 {
+			return true
+		}
+		x, y := m.T[0], m.T[1]
+		if math.IsNaN(x) || math.IsNaN(y) || math.IsInf(x, 0) || math.IsInf(y, 0) || now.Sub(c.lastTap) < tapEvery {
+			return true // invalid, or tapping faster than anyone needs to
+		}
+		c.lastTap = now
+		h.taps = append(h.taps, tap{from: c, x: clamp(x), y: clamp(y)})
+		h.version++
+		return true
 	}
 	if m.X == nil || m.Y == nil {
 		if c.active {
@@ -175,6 +201,11 @@ func (h *Hub) Run(ctx context.Context) {
 					break
 				}
 			}
+			for _, t := range h.taps {
+				if t.from != c && len(snap.R) < maxTapsSent {
+					snap.R = append(snap.R, [2]float64{t.x, t.y})
+				}
+			}
 			msg, _ := json.Marshal(snap)
 			// Replace any unsent snapshot: a slow client just skips frames.
 			select {
@@ -183,6 +214,7 @@ func (h *Hub) Run(ctx context.Context) {
 			}
 			c.send <- msg
 		}
+		h.taps = h.taps[:0]
 		h.mu.Unlock()
 	}
 }
