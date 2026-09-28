@@ -16,6 +16,13 @@ const REFRESH_MS = 15 * 60 * 1000;
 const TIMEOUT_MS = 8_000; // then fall back to asking Open-Meteo directly (the request still wakes the service)
 const PHASES = new Set(["dawn", "day", "dusk", "night"]);
 
+/**
+ * Whether the time of day recolours the particles and smoke (orange dusk,
+ * violet night…). Off for now: the site stays pink; sky, rain, weather and
+ * movement still follow Lagos. Flip to true to bring the colours back.
+ */
+const MOOD_COLOURS = false;
+
 let mood: Mood | null = null;
 /** Whether the service is configured at all (the build inlines the URL). */
 export const moodConfigured = Boolean(URL);
@@ -55,7 +62,7 @@ function apply(body: unknown): boolean {
   target.turbulence = num(p.turbulence, 0.5, 1.8, 1);
   target.calm = num(p.calm, 0.5, 1.2, 1);
   target.energy = num(p.energy, 0, 1, 0);
-  target.tintMix = tint ? num(p.tint_mix, 0, 1, 0) : 0;
+  target.tintMix = MOOD_COLOURS && tint ? num(p.tint_mix, 0, 1, 0) : 0;
   if (tint) target.tint = tint;
 
   const w = b.weather as Record<string, unknown> | null;
