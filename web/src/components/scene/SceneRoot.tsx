@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { startMood } from "@/lib/mood";
 import { startPresence } from "@/lib/presence";
-import { InkTrail } from "./InkTrail";
+import { FluidSmoke } from "./FluidSmoke";
 import { PeerCursors } from "./PeerCursors";
 
 // The GPU scene is client-only and loaded after the page is interactive,
@@ -34,7 +34,7 @@ export function SceneRoot() {
         <div className="absolute top-[55%] left-[12%] size-[34vmax] rounded-full bg-accent-soft blur-[80px] motion-safe:animate-[drift_22s_ease-in-out_infinite_reverse]" />
       </div>
       <SceneCanvas />
-      <InkTrail />
+      <FluidSmoke />
       <PeerCursors />
     </>
   );
