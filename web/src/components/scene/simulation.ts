@@ -285,7 +285,7 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
   const shimmered = mix(fast, magenta, shimmer.mul(0.35));
   // Mood: lean towards the time-of-day tint, keeping per-particle variation.
   const moodColor = u.moodTint.mul(seed.mul(0.5).add(0.75));
-  const tint = mix(shimmered, moodColor, u.moodMix.mul(0.7));
+  const tint = mix(shimmered, moodColor, u.moodMix.mul(0.9));
   const disc = uv().sub(0.5).length().mul(2).oneMinus().saturate().pow(1.25);
 
   material.positionNode = posAttr;

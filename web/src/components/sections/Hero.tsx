@@ -8,6 +8,7 @@ import { getIntroDone, subscribeIntro } from "@/lib/scene-store";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { ReactiveText } from "@/components/motion/ReactiveText";
 import { useReducedMotion } from "@/lib/useReducedMotion";
+import { MoodChip } from "@/components/LagosWeather";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -66,13 +67,16 @@ export function Hero() {
     >
       <motion.div style={reduce ? undefined : { y, opacity }} className="container-page pt-32 pb-16 md:pb-24">
         <Fade play={play} delay={0}>
-          <p className="glass mb-8 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium text-fg/80">
+          <div className="mb-8 flex flex-wrap items-center gap-2">
+          <p className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium text-fg/80">
             <span className="relative flex size-2">
               <span className="absolute inset-0 animate-ping rounded-full bg-accent/60 motion-reduce:hidden" />
               <span className="relative size-2 rounded-full bg-accent" />
             </span>
             {site.availability}
           </p>
+          <MoodChip className="glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium text-fg/80" />
+          </div>
         </Fade>
 
         <h1

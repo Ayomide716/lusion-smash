@@ -62,13 +62,14 @@ class Params:
     calm: float
 
 
+# Bold enough to notice: each phase has its own colour, day keeps the site's pink.
 TINTS = {
-    "dawn": "#fb7185",  # rose-400, warm and soft
+    "dawn": "#fb923c",  # orange-400, peach sunrise
     "day": "#ec4899",  # the site's own pink-500
-    "dusk": "#f472b6",  # pink-400 fading towards magenta
-    "night": "#c026d3",  # fuchsia-600, deeper
+    "dusk": "#f97316",  # orange-500, sunset coral
+    "night": "#7c3aed",  # violet-600, deep night
 }
-TINT_MIX = {"dawn": 0.45, "day": 0.0, "dusk": 0.4, "night": 0.5}
+TINT_MIX = {"dawn": 0.6, "day": 0.0, "dusk": 0.65, "night": 0.7}
 
 
 def clamp(x: float, lo: float, hi: float) -> float:
