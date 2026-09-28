@@ -26,7 +26,16 @@ my initials, then morph into a new shape for each section as you scroll, and swi
   damped spring, runs a fixed 60 Hz clock and packs the velocity field into half floats. The 28 KB `.wasm` has no
   imports and no JS glue; `web/src/lib/engine.ts` reads the field through a zero-copy view of wasm memory and the
   compute kernel samples it as a texture, so particles are carried by the flow behind your cursor.
-- **Post-processing** (`PostFX.tsx`): a light chromatic aberration that swells with cursor energy, plus film grain,
+- **GPU smoke** (`FluidSmoke.tsx`): a second, finer stable-fluids solver in WebGL 2 shaders (128-cell velocity,
+  512-cell dye) drawn as soft pink smoke, stirred by the cursor, other visitors and clicks. Desktop GPUs only;
+  phones and software renderers keep the WebAssembly ink trail. `?smoke` forces it on for testing.
+- **Project sculptures** (`shapes.ts`): hovering a project card builds a particle sculpture of it (bag, phone, bar
+  chart, book) instead of spelling its title.
+- **Performance**: section positions are measured at most once a second (no per-frame layout), a governor adjusts
+  render resolution for the whole visit to hold the frame rate, phones cap resolution at 1.25x and drop
+  backdrop-filter blur, and the animated fallback stops once the scene is drawn.
+- **Post-processing** (`PostFX.tsx`): a living sky gradient and rain streaks from the Lagos mood, a light chromatic
+  aberration that swells with cursor energy, plus film grain,
   written in TSL.
 - **Renderers & fallbacks**: WebGL 2 is the default; WebGPU is opt-in with `?renderer=webgpu` (it falls back to
   WebGL 2 if it fails to start, loses its device or reports a validation error). Software rasterisers and devices
@@ -38,7 +47,7 @@ Debug query params: `?renderer=webgl|webgpu` picks a backend (and disables the s
 
 2D motion (`web/src/components/motion/`): custom cursor with contextual labels, magnetic CTAs, masked split-text
 headlines, a scroll-velocity marquee, a statement that lights up word by word, count-up metrics, tilt + spotlight
-project cards, a scroll-drawn timeline, a scroll progress bar, rolling nav links, a pink route-transition wipe and a
+project cards, a scroll-drawn timeline, a scroll progress bar, rolling nav links, particle page transitions (the field blasts out and reforms into the next page) and a
 letter-by-letter footer wordmark. Set pieces: a 0→100 loading counter, a pinned horizontal Work gallery, stacking
 principle cards, a scroll-driven pink circle reveal for Contact, scrambling section labels, a full-screen mobile menu
 and optional synthesised UI sound (Web Audio, off by default): click/hover blips plus a generative ambient of slow
