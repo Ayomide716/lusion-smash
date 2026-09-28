@@ -6,6 +6,7 @@ import { SceneRoot } from "@/components/scene/SceneRoot";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Intro, introInitScript } from "@/components/Intro";
 import { Cursor } from "@/components/motion/Cursor";
+import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { Analytics } from "@vercel/analytics/next";
 import { services, site } from "@/content/site";
 import { themeInitScript } from "@/lib/theme";
@@ -105,6 +106,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Nav />
         <main id="main">{children}</main>
         <Footer />
+        <WhatsAppFloat />
         <Cursor />
         {/* Vercel serves the analytics script; elsewhere it would 404. */}
         {process.env.NEXT_PUBLIC_VERCEL_ENV && <Analytics />}
