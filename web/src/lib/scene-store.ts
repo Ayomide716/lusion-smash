@@ -31,6 +31,8 @@ export const sceneState = {
   word: null as string | null,
   /** A visitor's name typed into the hero; spelled while the hero is on screen. */
   name: null as string | null,
+  /** When the visitor last moved, scrolled, tapped or typed (performance.now()). */
+  lastInput: 0,
   /** Device tilt on phones, -1..1 per axis. */
   tilt: { x: 0, y: 0 },
   /**

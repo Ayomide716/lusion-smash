@@ -194,6 +194,11 @@ export default function SceneCanvas() {
   }, []);
 
   useEffect(() => {
+    // Anything the visitor does counts as activity (see the idle message in simulation.ts).
+    const wake = () => (sceneState.lastInput = performance.now());
+    wake();
+    const wakeOn = ["pointermove", "pointerdown", "wheel", "scroll", "keydown", "touchstart"] as const;
+    wakeOn.forEach((type) => window.addEventListener(type, wake, { passive: true }));
     const move = (e: PointerEvent) => {
       sceneState.pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
       sceneState.pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -276,6 +281,7 @@ export default function SceneCanvas() {
     window.addEventListener("pointercancel", up, { passive: true });
     document.documentElement.addEventListener("pointerleave", leave);
     return () => {
+      wakeOn.forEach((type) => window.removeEventListener(type, wake));
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerdown", move);
       window.removeEventListener("pointerup", up);

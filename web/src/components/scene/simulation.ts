@@ -47,6 +47,9 @@ export type FrameInput = {
 const SPIN: Record<ShapeName, number> = { initials: 0, sphere: 0.14, knot: 0.1, galaxy: 0.06 };
 const CAMERA_Z = 6;
 const wordCache = new Map<string, Float32Array>();
+/** Spelled when the visitor has done nothing for IDLE_AFTER ms. */
+const IDLE_WORD = "STILL THERE? 👀";
+const IDLE_AFTER = 10_000;
 
 type Section = { shape: number; x: number; y: number; scale: number };
 
@@ -469,8 +472,10 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   // name typed into the hero wins while the hero is in view, and sits higher
   // so it stays clear of the text and the phone keyboard.
   const name = sceneState.name && window.scrollY < height * 0.6 ? sceneState.name : null;
-  sim.setWord(name ?? sceneState.word);
-  u.hover.value += (sim.hoverTarget - u.hover.value) * Math.min(1, dt * 5);
+  // Left alone for a while, the field slowly asks if you're still there.
+  const idle = !reducedMotion && !name && performance.now() - sceneState.lastInput > IDLE_AFTER;
+  sim.setWord(name ?? (idle ? IDLE_WORD : sceneState.word));
+  u.hover.value += (sim.hoverTarget - u.hover.value) * Math.min(1, dt * (idle ? 0.9 : 5));
   u.wordScale.value = Math.min(halfW * 0.8, halfH * 1.4);
   u.wordOffset.value.set(0, halfH * (name ? 0.3 : 0.05), 0.3);
 
