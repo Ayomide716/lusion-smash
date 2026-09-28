@@ -62,7 +62,8 @@ export function PostFX({ quality }: { quality: "high" | "low" }) {
       const streak = smoothstep(0.9, 1.0, fall).mul(smoothstep(0.66, 0.7, seed));
       const line = smoothstep(0.55, 1.0, x.fract().sub(0.5).abs().mul(2).oneMinus());
       const drop = streak.mul(line).mul(rain);
-      const wet = mix(sky.mul(drop.mul(0.25).oneMinus()), sky.add(drop.mul(0.2)), dark);
+      // Light mode: slate-blue streaks (darkening white alone was nearly invisible); dark mode: soft highlights.
+      const wet = mix(mix(sky, vec3(0.2, 0.26, 0.36), drop.mul(0.6)), sky.add(drop.mul(0.22)), dark);
       const grain = uv.dot(vec2(12.9898, 78.233)).add(time.fract()).sin().mul(43758.5453).fract().sub(0.5).mul(quality === "high" ? 0.018 : 0.012);
       return vec4(wet.add(grain).clamp(0, 1), 1);
     });
