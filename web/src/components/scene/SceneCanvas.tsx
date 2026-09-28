@@ -216,11 +216,14 @@ export default function SceneCanvas() {
     window.addEventListener("pointermove", move, { passive: true });
     window.addEventListener("pointerdown", move, { passive: true });
     window.addEventListener("pointerup", up, { passive: true });
+    // On phones a touch that turns into a scroll is cancelled, not lifted.
+    window.addEventListener("pointercancel", up, { passive: true });
     document.documentElement.addEventListener("pointerleave", leave);
     return () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerdown", move);
       window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
       window.removeEventListener("pointerdown", shock);
       window.removeEventListener("pointerover", over);
       window.removeEventListener("pointerdown", askTilt);

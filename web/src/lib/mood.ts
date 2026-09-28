@@ -45,9 +45,9 @@ function hexToLinear(hex: unknown): [number, number, number] | null {
   return [c(1), c(3), c(5)];
 }
 
-/** Validate and apply a response. Anything unexpected is ignored, never trusted. */
-function apply(body: unknown) {
-  if (!body || typeof body !== "object") return;
+/** Validate and apply a response. Returns whether it included the weather. */
+function apply(body: unknown): boolean {
+  if (!body || typeof body !== "object") return false;
   const b = body as Record<string, unknown>;
   const p = (b.params ?? {}) as Record<string, unknown>;
   const tint = hexToLinear(p.tint);
@@ -68,27 +68,49 @@ function apply(body: unknown) {
         : null,
   };
   listeners.forEach((l) => l());
+  return mood.weather !== null;
 }
 
 let started = false;
 
-/** Fetch the mood now and every 15 minutes while the page is open. */
+/**
+ * Fetch the mood now, then every 15 minutes while the page is open. A free
+ * server that's still waking (or a missing weather reading) is retried after
+ * 10, 20, 40… seconds, up to 5 minutes apart, instead of waiting 15 minutes.
+ */
 export function startMood() {
   if (started || !URL || typeof window === "undefined") return;
   started = true;
-  const load = async () => {
-    if (document.hidden) return;
+  let retry = 10_000;
+  let timer = 0;
+  const schedule = (ms: number) => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(load, ms);
+  };
+  async function load() {
+    if (document.hidden) {
+      // Try again when the tab is visible.
+      document.addEventListener("visibilitychange", load, { once: true });
+      return;
+    }
     const abort = new AbortController();
-    const timer = window.setTimeout(() => abort.abort(), TIMEOUT_MS);
+    const timeout = window.setTimeout(() => abort.abort(), TIMEOUT_MS);
+    let complete = false;
     try {
       const res = await fetch(`${URL}/mood`, { signal: abort.signal });
-      if (res.ok) apply(await res.json());
+      if (res.ok) complete = apply(await res.json());
     } catch {
-      // Asleep, offline or blocked: keep the default look.
+      // Asleep, offline or blocked: keep the default look for now.
     } finally {
-      window.clearTimeout(timer);
+      window.clearTimeout(timeout);
     }
-  };
+    if (complete) {
+      retry = 10_000;
+      schedule(REFRESH_MS);
+    } else {
+      schedule(retry);
+      retry = Math.min(retry * 2, 5 * 60_000);
+    }
+  }
   load();
-  window.setInterval(load, REFRESH_MS);
 }

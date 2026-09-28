@@ -91,10 +91,12 @@ func serveWS(hub *Hub, origins []string, w http.ResponseWriter, r *http.Request)
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	// Writer: forward snapshots and ping so proxies keep the socket open.
+	// Writer: forward snapshots, and ping so proxies keep the socket open and a
+	// visitor who vanished (phone switched networks, laptop slept) stops being
+	// counted within about 20 seconds.
 	go func() {
 		defer cancel()
-		ping := time.NewTicker(25 * time.Second)
+		ping := time.NewTicker(15 * time.Second)
 		defer ping.Stop()
 		for {
 			select {
@@ -108,7 +110,7 @@ func serveWS(hub *Hub, origins []string, w http.ResponseWriter, r *http.Request)
 					return
 				}
 			case <-ping.C:
-				pctx, done := context.WithTimeout(ctx, 10*time.Second)
+				pctx, done := context.WithTimeout(ctx, 5*time.Second)
 				err := conn.Ping(pctx)
 				done()
 				if err != nil {

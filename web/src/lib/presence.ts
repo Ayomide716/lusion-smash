@@ -7,6 +7,8 @@ import { sceneState } from "@/lib/scene-store";
 
 const BASE = process.env.NEXT_PUBLIC_PRESENCE_URL?.replace(/\/$/, "");
 const SEND_EVERY_MS = 80;
+/** Without any movement, scrolling or typing for this long, you stop counting as "here". */
+const IDLE_MS = 3 * 60_000;
 const MAX_PEERS = 12;
 
 export type Peer = {
@@ -99,6 +101,8 @@ export function startPresence() {
   started = true;
 
   let socket: WebSocket | null = null;
+  let away = false;
+  let lastActive = Date.now();
   let retry = 2000;
   let retryTimer = 0;
   let sendTimer = 0;
@@ -116,7 +120,7 @@ export function startPresence() {
 
   const connect = () => {
     window.clearTimeout(retryTimer);
-    if (document.hidden || socket) return;
+    if (document.hidden || away || socket) return;
     const ws = new WebSocket(url);
     socket = ws;
     ws.onopen = () => {
@@ -132,6 +136,8 @@ export function startPresence() {
       peers.clear();
       setCount(0);
       setStatus("connecting");
+      // Closed on purpose (tab hidden or idle): reconnect on return, not on a timer.
+      if (document.hidden || away) return;
       // A sleeping free server takes a while to wake; back off up to a minute.
       retryTimer = window.setTimeout(connect, retry);
       retry = Math.min(retry * 2, 60_000);
@@ -142,9 +148,31 @@ export function startPresence() {
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) socket?.close();
     else {
+      lastActive = Date.now();
+      away = false;
       retry = 2000;
       connect();
     }
   });
+
+  // A tab left open on an unattended screen shouldn't count as someone here.
+  const activity = () => {
+    lastActive = Date.now();
+    if (away) {
+      away = false;
+      retry = 2000;
+      connect();
+    }
+  };
+  for (const type of ["pointermove", "pointerdown", "keydown", "scroll", "wheel"] as const) {
+    window.addEventListener(type, activity, { passive: true });
+  }
+  window.setInterval(() => {
+    if (!away && Date.now() - lastActive > IDLE_MS) {
+      away = true;
+      socket?.close();
+    }
+  }, 15_000);
+
   connect();
 }
