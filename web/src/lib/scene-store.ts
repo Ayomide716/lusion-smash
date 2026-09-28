@@ -27,6 +27,8 @@ export const sceneState = {
   shock: { x: 0, y: 0, age: 99 },
   /** Word the particles should spell while something with data-particles is hovered. */
   word: null as string | null,
+  /** A visitor's name typed into the hero; spelled while the hero is on screen. */
+  name: null as string | null,
   /** Device tilt on phones, -1..1 per axis. */
   tilt: { x: 0, y: 0 },
   /**

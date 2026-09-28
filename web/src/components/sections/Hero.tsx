@@ -9,6 +9,7 @@ import { Magnetic } from "@/components/motion/Magnetic";
 import { ReactiveText } from "@/components/motion/ReactiveText";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { MoodChip } from "@/components/LagosWeather";
+import { NameSpell } from "@/components/NameSpell";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -76,6 +77,7 @@ export function Hero() {
             {site.availability}
           </p>
           <MoodChip className="glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium text-fg/80" />
+          <NameSpell className="glass inline-flex cursor-text items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium focus-within:ring-2 focus-within:ring-accent/40" />
           </div>
         </Fade>
 

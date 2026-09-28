@@ -440,11 +440,14 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   }
   sim.pointerLast = { x: px, y: py };
 
-  // Hovered word: fade in/out and fit it across the middle of the screen.
-  sim.setWord(sceneState.word);
+  // Hovered word: fade in/out and fit it across the middle of the screen. A
+  // name typed into the hero wins while the hero is in view, and sits higher
+  // so it stays clear of the text and the phone keyboard.
+  const name = sceneState.name && window.scrollY < height * 0.6 ? sceneState.name : null;
+  sim.setWord(name ?? sceneState.word);
   u.hover.value += (sim.hoverTarget - u.hover.value) * Math.min(1, dt * 5);
   u.wordScale.value = Math.min(halfW * 0.8, halfH * 1.4);
-  u.wordOffset.value.set(0, halfH * 0.05, 0.3);
+  u.wordOffset.value.set(0, halfH * (name ? 0.3 : 0.05), 0.3);
 
   // Device tilt (phones): -1..1 per axis → sideways acceleration in world units.
   u.tilt.value.set(sceneState.tilt.x * 2.2, sceneState.tilt.y * 1.6);

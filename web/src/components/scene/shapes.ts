@@ -36,7 +36,10 @@ function initials(count: number, text: string, fontFamily: string, rand: () => n
   ctx.fillStyle = "#fff";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  // Shrink long words (typed names, messages) so they fit the canvas.
   ctx.font = `800 400px ${fontFamily}`;
+  const fit = Math.min(1, (w * 0.94) / Math.max(1, ctx.measureText(text).width));
+  if (fit < 1) ctx.font = `800 ${Math.floor(400 * fit)}px ${fontFamily}`;
   ctx.fillText(text, w / 2, h / 2 + 16);
 
   const data = ctx.getImageData(0, 0, w, h).data;
