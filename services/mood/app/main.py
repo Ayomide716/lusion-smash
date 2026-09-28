@@ -72,4 +72,6 @@ async def get_mood(response: Response) -> dict:
             "code": weather.code,
         },
         "params": mood.as_dict(mood.params(phase, weather)),
+        # Diagnostic: why there's no weather (e.g. a timeout or rate limit upstream).
+        **({"weather_error": app.state.weather.last_error} if weather is None and app.state.weather.last_error else {}),
     }

@@ -57,11 +57,13 @@ def parse(payload: dict) -> Snapshot:
 
 
 class WeatherCache:
-    def __init__(self, client: httpx.AsyncClient, ttl: float = 600.0, timeout: float = 4.0):
+    def __init__(self, client: httpx.AsyncClient, ttl: float = 600.0, timeout: float = 10.0):
         self.client = client
         self.ttl = ttl
         self.timeout = timeout
         self.snapshot: Snapshot | None = None
+        #: Why the last upstream request failed (shown by /mood while there's no weather).
+        self.last_error: str | None = None
         self._lock = asyncio.Lock()
 
     async def get(self) -> Snapshot | None:
@@ -76,6 +78,8 @@ class WeatherCache:
                 res = await self.client.get(URL, params=QUERY, timeout=self.timeout)
                 res.raise_for_status()
                 self.snapshot = parse(res.json())
+                self.last_error = None
             except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as err:
+                self.last_error = f"{type(err).__name__}: {err}"[:200]
                 log.warning("Open-Meteo unavailable, serving %s: %s", "stale weather" if self.snapshot else "time only", err)
             return self.snapshot

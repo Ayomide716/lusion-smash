@@ -79,6 +79,7 @@ def test_no_weather_at_all_still_answers(monkeypatch):
         main.app.state.weather = WeatherCache(upstream(handler))
         body = c.get("/mood").json()
     assert body["weather"] is None and body["phase"] == "day"
+    assert "weather_error" in body  # says why, for debugging
     assert json.dumps(body)  # serialisable
 
 
