@@ -86,13 +86,15 @@ const CHIMES = [523.25, 587.33, 659.26, 783.99, 880.0]; // C major pentatonic
 const CHORD_SECONDS = 10;
 const FADE_SECONDS = 4;
 const VOICE_LEVEL = 0.016;
+/** Overall ambient level (about -7 dB, roughly half as loud); click sounds are unaffected. */
+const AMBIENT_LEVEL = 0.45;
 
 function startAmbient() {
   const { ctx, master } = audio();
   const now = ctx.currentTime;
   const out = ctx.createGain();
   out.gain.setValueAtTime(0, now);
-  out.gain.linearRampToValueAtTime(1, now + 3);
+  out.gain.linearRampToValueAtTime(AMBIENT_LEVEL, now + 3);
   out.connect(master);
 
   // Soft top end, then dry + a two-tap filtered feedback echo for space.
