@@ -67,6 +67,9 @@ function apply(body: unknown): boolean {
         ? { temperatureC: Math.round(num(w.temperature_c, -50, 60, 0)), description: w.description.slice(0, 40) }
         : null,
   };
+  sceneState.sky.phase = mood.phase;
+  const desc = mood.weather?.description ?? "";
+  sceneState.sky.rain = /thunder/.test(desc) ? 1 : /heavy/.test(desc) ? 0.85 : /rain|shower/.test(desc) ? 0.6 : /drizzle/.test(desc) ? 0.35 : 0;
   listeners.forEach((l) => l());
   return mood.weather !== null;
 }

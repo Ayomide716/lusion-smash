@@ -456,7 +456,7 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   // Mood (Lagos time of day and weather): ease over a few seconds, never snap.
   const mood = sim.mood;
   const target = sceneState.mood;
-  const k = 1 - Math.exp(-dt * 0.6);
+  const k = 1 - Math.exp(-Math.min(delta, 0.5) * 0.6); // real time, so slow devices ease at the same pace
   mood.turbulence += (target.turbulence - mood.turbulence) * k;
   mood.calm += (target.calm - mood.calm) * k;
   mood.energy += (target.energy - mood.energy) * k;

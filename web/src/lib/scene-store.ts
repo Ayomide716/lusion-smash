@@ -41,6 +41,8 @@ export const sceneState = {
     /** Linear RGB. */
     tint: [0.838, 0.064, 0.319] as [number, number, number],
   },
+  /** Sky over the page (drawn in PostFX): Lagos phase of day, and rain from 0 to 1. */
+  sky: { phase: null as "dawn" | "day" | "dusk" | "night" | null, rain: 0 },
 };
 
 export function getStats(): SceneStats {
