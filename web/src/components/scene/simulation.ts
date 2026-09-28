@@ -21,7 +21,7 @@ import {
   vec3,
   vec4,
 } from "three/tsl";
-import { buildShapes, SHAPES, textShape, type ShapeName } from "./shapes";
+import { buildShapes, sculptureFor, SHAPES, textShape, type ShapeName } from "./shapes";
 import { sceneState, setStats } from "@/lib/scene-store";
 import { FIELD_SIZE, STATE, type Engine } from "@/lib/engine";
 import { peers } from "@/lib/presence";
@@ -348,7 +348,8 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
       const key = `${count}:${word}`;
       let shape = wordCache.get(key);
       if (!shape) {
-        shape = textShape(count, word, font);
+        // Projects become a sculpture of what they are; anything else is spelled.
+        shape = sculptureFor(word, count) ?? textShape(count, word, font);
         wordCache.set(key, shape);
       }
       (wordTex.image.data as Float32Array).set(shape);

@@ -147,3 +147,134 @@ export function buildShapes(count: number, text: string, fontFamily: string) {
     galaxy: galaxy(count, mulberry32(4)),
   } satisfies Record<ShapeName, Float32Array>;
 }
+
+// --- Project sculptures ------------------------------------------------------
+// Shown instead of the spelled title while a project card is hovered (or, on
+// phones, crossing the middle of the screen). Same space as `textShape`:
+// roughly x ∈ [-0.8, 0.8], y ∈ [-0.55, 0.55], tilted for a 3D read.
+
+type Emit = (x: number, y: number, z: number) => void;
+
+function sculpture(count: number, seed: number, draw: (emit: Emit, rand: () => number, n: number) => void) {
+  const rand = mulberry32(seed);
+  const out = new Float32Array(count * 4);
+  let i = 0;
+  const ay = -0.5; // turn and tip it towards the camera
+  const ax = 0.28;
+  const cy = Math.cos(ay), sy = Math.sin(ay), cx = Math.cos(ax), sx = Math.sin(ax);
+  const emit: Emit = (x, y, z) => {
+    if (i >= count) return;
+    const x1 = x * cy + z * sy;
+    const z1 = z * cy - x * sy;
+    const y2 = y * cx - z1 * sx;
+    const z2 = z1 * cx + y * sx;
+    out[i * 4] = x1;
+    out[i * 4 + 1] = y2;
+    out[i * 4 + 2] = z2;
+    out[i * 4 + 3] = rand();
+    i++;
+  };
+  draw(emit, rand, count);
+  while (i < count) emit(gaussian(rand) * 0.6, gaussian(rand) * 0.4, gaussian(rand) * 0.3); // stray dust
+  return out;
+}
+
+/** Points on the six faces of a box centred at (cx, cy, cz). */
+function box(emit: Emit, rand: () => number, n: number, w: number, h: number, d: number, cx = 0, cy = 0, cz = 0) {
+  const areas = [w * h, w * h, w * d, w * d, h * d, h * d];
+  const total = areas.reduce((a, b) => a + b, 0);
+  for (let k = 0; k < n; k++) {
+    let r = rand() * total;
+    let f = 0;
+    while (r > areas[f]) r -= areas[f++];
+    const u = rand() - 0.5, v = rand() - 0.5;
+    const s = f % 2 ? 0.5 : -0.5;
+    if (f < 2) emit(cx + u * w, cy + v * h, cz + s * d);
+    else if (f < 4) emit(cx + u * w, cy + s * h, cz + v * d);
+    else emit(cx + s * w, cy + u * h, cz + v * d);
+  }
+}
+
+/** NaijaHustle: a shopping bag with rope handles. */
+function bag(count: number) {
+  return sculpture(count, 101, (emit, rand, n) => {
+    const body = Math.floor(n * 0.78);
+    for (let k = 0; k < body; k++) {
+      // Slight taper: wider at the top, like a paper bag.
+      const t = rand();
+      const y = -0.5 + t * 0.78;
+      const halfW = 0.36 + t * 0.06;
+      const face = rand();
+      if (face < 0.42) emit((rand() - 0.5) * 2 * halfW, y, 0.17);
+      else if (face < 0.84) emit((rand() - 0.5) * 2 * halfW, y, -0.17);
+      else emit(rand() < 0.5 ? -halfW : halfW, y, (rand() - 0.5) * 0.34);
+    }
+    for (let k = body; k < n * 0.92; k++) {
+      const a = rand() * Math.PI;
+      const side = rand() < 0.5 ? -0.13 : 0.13;
+      emit(Math.cos(a) * 0.2 + gaussian(rand) * 0.008, 0.28 + Math.sin(a) * 0.24, side + gaussian(rand) * 0.008);
+    }
+  });
+}
+
+/** ZWCC: a phone with a screen of app tiles. */
+function phone(count: number) {
+  return sculpture(count, 202, (emit, rand, n) => {
+    const w = 0.5, h = 1.04;
+    box(emit, rand, Math.floor(n * 0.4), w, h, 0.07);
+    // Screen tiles (a 3×4 grid of app icons) and a header bar.
+    const tiles = Math.floor(n * 0.35);
+    for (let k = 0; k < tiles; k++) {
+      const col = Math.floor(rand() * 3), row = Math.floor(rand() * 4);
+      emit(-0.15 + col * 0.15 + (rand() - 0.5) * 0.1, 0.22 - row * 0.17 + (rand() - 0.5) * 0.1, 0.04);
+    }
+    for (let k = 0; k < n * 0.1; k++) emit((rand() - 0.5) * 0.4, 0.4 + (rand() - 0.5) * 0.05, 0.04);
+  });
+}
+
+/** Larshaun: a rising bar chart with a trend line. */
+function bars(count: number) {
+  return sculpture(count, 303, (emit, rand, n) => {
+    const heights = [0.32, 0.5, 0.42, 0.7, 0.92];
+    const per = Math.floor((n * 0.72) / heights.length);
+    heights.forEach((bh, b) => box(emit, rand, per, 0.18, bh, 0.18, -0.56 + b * 0.28, -0.5 + bh / 2, 0));
+    for (let k = 0; k < n * 0.08; k++) emit(-0.72 + rand() * 1.44, -0.52, (rand() - 0.5) * 0.24); // axis
+    for (let k = 0; k < n * 0.12; k++) {
+      // Trend line through the bar tops, lifted above them.
+      const t = rand() * (heights.length - 1);
+      const i0 = Math.floor(t);
+      const f = t - i0;
+      const top = heights[i0] + (heights[Math.min(i0 + 1, heights.length - 1)] - heights[i0]) * f;
+      emit(-0.56 + t * 0.28, -0.5 + top + 0.1 + gaussian(rand) * 0.006, 0.12);
+    }
+  });
+}
+
+/** Amelia Hart: an open book with lines of text. */
+function book(count: number) {
+  return sculpture(count, 404, (emit, rand, n) => {
+    for (let k = 0; k < n * 0.9; k++) {
+      const left = rand() < 0.5;
+      const u = rand(); // 0 at the spine, 1 at the page edge
+      const v = rand() - 0.5;
+      // Text lines: points bunch into rows across most of the page.
+      const lined = rand() < 0.6 && u > 0.12 && u < 0.9;
+      const y = lined ? Math.round(v * 12) / 12 + gaussian(rand) * 0.006 : v;
+      const x = (left ? -1 : 1) * u * 0.74;
+      const z = Math.sin(u * Math.PI) * 0.1 - u * 0.12; // pages curl up from the spine
+      emit(x, y * 0.95, z);
+    }
+  });
+}
+
+const SCULPTURES: Record<string, (count: number) => Float32Array> = {
+  NAIJAHUSTLE: bag,
+  "ZWCC BUSINESS GRANT": phone,
+  "LARSHAUN PARTY PACKS": bars,
+  "AMELIA HART STORY STUDIO": book,
+};
+
+/** A project's sculpture for a hover word, if it has one. */
+export function sculptureFor(word: string, count: number) {
+  return SCULPTURES[word]?.(count) ?? null;
+}
