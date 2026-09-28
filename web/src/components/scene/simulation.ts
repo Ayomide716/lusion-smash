@@ -199,6 +199,8 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     /** Hold-to-charge level (0..1) and where the finger or cursor is. */
     charge: uniform(0),
     chargePos: uniform(new THREE.Vector2()),
+    /** Smoothed scroll speed in world units per second (+ = scrolling down). */
+    streak: uniform(0),
     hover: uniform(0),
     wordScale: uniform(1),
     wordOffset: uniform(new THREE.Vector3()),
@@ -257,6 +259,9 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     const flow = curlNoise(p.mul(0.55).add(vec3(0, time.mul(0.07), time.mul(0.11))));
     const churn = select(dust, float(0.6), u.energy.mul(1.5).add(0.35));
     acc.addAssign(flow.mul(u.turbulence).mul(churn));
+    // Fast scrolling drags the field along with the page (warp speed); the
+    // springs snap it back once scrolling stops.
+    acc.y.addAssign(u.streak.mul(seed.mul(0.5).add(0.15)));
     // Phone tilt sloshes the field sideways; the springs pull it back.
     acc.xy.addAssign(u.tilt);
 
@@ -343,7 +348,13 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
   material.positionNode = posAttr;
   material.colorNode = tint;
   material.opacityNode = disc.mul(u.opacity);
-  material.scaleNode = u.size.mul(seed.mul(0.9).add(0.45)).mul(speed.mul(0.1).add(1).min(1.6)).mul(glow.mul(0.8).add(1));
+  // Scroll streaks: sprites stretch vertically (and thin out) with scroll speed.
+  const stretch = u.streak.abs().mul(0.28).min(4).mul(seed.mul(0.8).add(0.6));
+  material.scaleNode = u.size
+    .mul(seed.mul(0.9).add(0.45))
+    .mul(speed.mul(0.1).add(1).min(1.6))
+    .mul(glow.mul(0.8).add(1))
+    .mul(vec2(float(1).div(stretch.mul(0.25).add(1)), stretch.add(1)));
 
   const sprite = new THREE.Sprite(material);
   sprite.count = count;
@@ -360,6 +371,7 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     mood: { turbulence: 1, calm: 1, energy: 0, tintMix: 0, tint: [0.838, 0.064, 0.319] },
     nextStorm: 0,
     pointerLast: { x: 0, y: 0 },
+    scroll: { y: -1, speed: 0 },
     fps: { frames: 0, elapsed: 0 },
     fieldTex,
     engine: null as Engine | null,
@@ -478,6 +490,15 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   u.hover.value += (sim.hoverTarget - u.hover.value) * Math.min(1, dt * (idle ? 0.9 : 5));
   u.wordScale.value = Math.min(halfW * 0.8, halfH * 1.4);
   u.wordOffset.value.set(0, halfH * (name ? 0.3 : 0.05), 0.3);
+
+  // Scroll speed → streaks. Jumps (anchor links, page changes) are capped.
+  const sc = sim.scroll;
+  const scrollY = window.scrollY;
+  const rawSpeed = sc.y < 0 || reducedMotion ? 0 : ((scrollY - sc.y) / Math.max(delta, 1e-3)) * ((halfH * 2) / height);
+  sc.y = scrollY;
+  sc.speed += (THREE.MathUtils.clamp(rawSpeed, -16, 16) - sc.speed) * Math.min(1, dt * 8);
+  if (Math.abs(sc.speed) < 0.01) sc.speed = 0;
+  u.streak.value = sc.speed;
 
   // Device tilt (phones): -1..1 per axis → sideways acceleration in world units.
   u.tilt.value.set(sceneState.tilt.x * 2.2, sceneState.tilt.y * 1.6);
