@@ -12,8 +12,8 @@ export type Mood = {
 
 const URL = process.env.NEXT_PUBLIC_MOOD_URL?.replace(/\/$/, "");
 const REFRESH_MS = 15 * 60 * 1000;
-// A free Render service can take up to a minute to wake from sleep.
-const TIMEOUT_MS = 75_000;
+// A free Render service can take up to a minute to wake from sleep, so don't wait on it:
+const TIMEOUT_MS = 8_000; // then fall back to asking Open-Meteo directly (the request still wakes the service)
 const PHASES = new Set(["dawn", "day", "dusk", "night"]);
 
 let mood: Mood | null = null;
@@ -68,10 +68,70 @@ function apply(body: unknown): boolean {
         : null,
   };
   sceneState.sky.phase = mood.phase;
+  document.documentElement.dataset.phase = mood.phase;
   const desc = mood.weather?.description ?? "";
   sceneState.sky.rain = /thunder/.test(desc) ? 1 : /heavy/.test(desc) ? 0.85 : /rain|shower/.test(desc) ? 0.6 : /drizzle/.test(desc) ? 0.35 : 0;
   listeners.forEach((l) => l());
   return mood.weather !== null;
+}
+
+// --- Direct fallback --------------------------------------------------------
+// If the mood service is asleep, down or has no weather reading, the browser
+// asks Open-Meteo itself (free, no key, CORS-enabled) and applies the same rules
+// as services/mood/app/mood.py, so the weather and colours still show.
+
+const WMO: Record<number, string> = {
+  0: "clear sky", 1: "mainly clear", 2: "partly cloudy", 3: "overcast", 45: "fog", 48: "fog",
+  51: "light drizzle", 53: "drizzle", 55: "heavy drizzle", 61: "light rain", 63: "rain", 65: "heavy rain",
+  80: "light showers", 81: "showers", 82: "heavy showers", 95: "thunderstorm", 96: "thunderstorm with hail", 99: "thunderstorm with hail",
+};
+const RAIN = new Set([51, 53, 55, 61, 63, 65, 80, 81, 82]);
+const STORM = new Set([95, 96, 99]);
+const TINTS = { dawn: ["#fb923c", 0.6], day: ["#ec4899", 0], dusk: ["#f97316", 0.65], night: ["#7c3aed", 0.7] } as const;
+const OPEN_METEO =
+  "https://api.open-meteo.com/v1/forecast?latitude=6.5244&longitude=3.3792&timezone=Africa%2FLagos&forecast_days=1" +
+  "&current=temperature_2m,precipitation,weather_code,wind_speed_10m&daily=sunrise,sunset";
+
+/** "HH:MM" of an ISO local time, as minutes since midnight. */
+const minutes = (iso: string) => {
+  const [h, m] = iso.slice(11, 16).split(":").map(Number);
+  return h * 60 + m;
+};
+
+async function direct(signal: AbortSignal): Promise<boolean> {
+  const res = await fetch(OPEN_METEO, { signal });
+  if (!res.ok) return false;
+  const data = await res.json();
+  const cur = data?.current;
+  const sunrise = data?.daily?.sunrise?.[0];
+  const sunset = data?.daily?.sunset?.[0];
+  if (!cur || typeof sunrise !== "string" || typeof sunset !== "string") return false;
+  const clock = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Lagos", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date());
+  const now = minutes(`0000-00-00T${clock}`);
+  const rise = minutes(sunrise);
+  const set = minutes(sunset);
+  const phase = Math.abs(now - rise) <= 50 ? "dawn" : Math.abs(now - set) <= 50 ? "dusk" : now > rise && now < set ? "day" : "night";
+  const code = Number(cur.weather_code);
+  const wind = Number(cur.wind_speed_10m) || 0;
+  let turbulence = phase === "night" ? 0.85 : 1;
+  let calm = phase === "night" ? 0.9 : 1;
+  let energy = 0;
+  turbulence *= 1 + Math.min(1, Math.max(0, wind / 40)) * 0.6;
+  if (RAIN.has(code) || Number(cur.precipitation) > 0.2) {
+    calm *= 0.75;
+    turbulence *= 0.8;
+  }
+  if (STORM.has(code)) {
+    turbulence *= 1.35;
+    energy = 0.35;
+  }
+  const [tint, tintMix] = TINTS[phase];
+  return apply({
+    local_time: clock,
+    phase,
+    weather: { temperature_c: Number(cur.temperature_2m), description: WMO[code] ?? "unsettled" },
+    params: { turbulence, calm, energy, tint, tint_mix: tintMix },
+  });
 }
 
 let started = false;
@@ -82,7 +142,7 @@ let started = false;
  * 10, 20, 40… seconds, up to 5 minutes apart, instead of waiting 15 minutes.
  */
 export function startMood() {
-  if (started || !URL || typeof window === "undefined") return;
+  if (started || typeof window === "undefined") return;
   started = true;
   let retry = 10_000;
   let timer = 0;
@@ -100,10 +160,17 @@ export function startMood() {
     const timeout = window.setTimeout(() => abort.abort(), TIMEOUT_MS);
     let complete = false;
     try {
-      const res = await fetch(`${URL}/mood`, { signal: abort.signal });
-      if (res.ok) complete = apply(await res.json());
+      if (URL) {
+        const res = await fetch(`${URL}/mood`, { signal: abort.signal });
+        if (res.ok) complete = apply(await res.json());
+      }
     } catch {
-      // Asleep, offline or blocked: keep the default look for now.
+      // Asleep, offline or blocked: fall through to the direct fetch.
+    }
+    try {
+      if (!complete) complete = await direct(AbortSignal.timeout(10_000));
+    } catch {
+      // Offline too: keep the default look for now.
     } finally {
       window.clearTimeout(timeout);
     }
