@@ -56,6 +56,7 @@ export function PeerCursors() {
         sceneState.shock.x = x;
         sceneState.shock.y = y;
         sceneState.shock.age = 0;
+        sceneState.shock.power = 1;
       }
     });
   }, []);

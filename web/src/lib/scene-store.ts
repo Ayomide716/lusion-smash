@@ -24,7 +24,9 @@ export const sceneState = {
   /** Page-level energy spike (e.g. hovering a project), decays in the loop. */
   energy: 0,
   /** Last click in NDC and seconds since it (large = no active shockwave). */
-  shock: { x: 0, y: 0, age: 99 },
+  shock: { x: 0, y: 0, age: 99, power: 1 },
+  /** Press and hold: particles are drawn in (level 0..1), and burst on release. */
+  charge: { held: false, x: 0, y: 0, since: 0, level: 0 },
   /** Word the particles should spell while something with data-particles is hovered. */
   word: null as string | null,
   /** A visitor's name typed into the hero; spelled while the hero is on screen. */

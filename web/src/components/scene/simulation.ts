@@ -191,6 +191,11 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     opacity: uniform(0.85),
     shockPos: uniform(new THREE.Vector2(0, 0)),
     shockAge: uniform(99),
+    /** 1 for a click; up to 3 for the burst after a charged hold. */
+    shockPower: uniform(1),
+    /** Hold-to-charge level (0..1) and where the finger or cursor is. */
+    charge: uniform(0),
+    chargePos: uniform(new THREE.Vector2()),
     hover: uniform(0),
     wordScale: uniform(1),
     wordOffset: uniform(new THREE.Vector3()),
@@ -242,7 +247,8 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     const target = mix(scrolled, wordNode.xyz.mul(u.wordScale).add(u.wordOffset), hb);
 
     const p = pos.xyz;
-    const spring = select(dust, float(0.04), u.spring.mul(seed.mul(0.8).add(0.6)));
+    // While charging, the springs let go so the shape can be drawn in.
+    const spring = select(dust, float(0.04), u.spring.mul(seed.mul(0.8).add(0.6))).mul(u.charge.mul(-0.85).add(1));
     const acc = target.sub(p).mul(spring).toVar();
 
     const flow = curlNoise(p.mul(0.55).add(vec3(0, time.mul(0.07), time.mul(0.11))));
@@ -270,14 +276,28 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
       acc.xy.addAssign(u.pointerVel.mul(falloff).mul(6));
     });
 
-    // Click shockwave: an expanding ring that kicks particles outward as it passes.
+    // Hold to charge: everything is sucked towards the press in a tightening
+    // spiral, trembling harder the longer it's held.
+    If(u.charge.greaterThan(0.001), () => {
+      const toward = u.chargePos.sub(p.xy);
+      const dist = toward.length();
+      const dir = toward.div(dist.add(0.001));
+      const pull = smoothstep(0.04, 0.5, dist).mul(u.charge).mul(seed.mul(8).add(14));
+      acc.xy.addAssign(dir.mul(pull).add(vec2(dir.y.negate(), dir.x).mul(u.charge.mul(5))));
+      acc.z.addAssign(p.z.mul(u.charge).mul(-3));
+      const shake = vec2(time.mul(53).add(seed.mul(91)).sin(), time.mul(61).add(seed.mul(57)).cos());
+      acc.xy.addAssign(shake.mul(u.charge.mul(u.charge).mul(10)));
+    });
+
+    // Click shockwave: an expanding ring that kicks particles outward as it
+    // passes. A charged release is bigger, faster and wider (a supernova).
     If(u.shockAge.lessThan(2.5), () => {
       const rel = p.xy.sub(u.shockPos);
       const dist = rel.length();
-      const ring = u.shockAge.mul(3.5);
-      const band = dist.sub(ring).abs().div(0.45).oneMinus().saturate();
+      const ring = u.shockAge.mul(u.shockPower.mul(1.2).add(2.3));
+      const band = dist.sub(ring).abs().div(u.shockPower.mul(0.3).add(0.15)).oneMinus().saturate();
       const fade = u.shockAge.mul(-1.4).exp();
-      const push = rel.div(dist.add(0.001)).mul(band.mul(fade).mul(38));
+      const push = rel.div(dist.add(0.001)).mul(band.mul(fade).mul(u.shockPower).mul(38));
       acc.addAssign(vec3(push, band.mul(fade).mul(6)));
     });
 
@@ -310,13 +330,17 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
   const shimmered = mix(fast, magenta, shimmer.mul(0.35));
   // Mood: lean towards the time-of-day tint, keeping per-particle variation.
   const moodColor = u.moodTint.mul(seed.mul(0.5).add(0.75));
-  const tint = mix(shimmered, moodColor, u.moodMix.mul(0.9));
+  const moody = mix(shimmered, moodColor, u.moodMix.mul(0.9));
+  // Charging glow: particles near the press heat up towards white-pink and swell.
+  const toCharge = posAttr.xy.sub(u.chargePos);
+  const glow = toCharge.dot(toCharge).negate().div(0.6).exp().mul(u.charge);
+  const tint = mix(moody, vec3(1, 0.62, 0.82), glow.mul(0.7));
   const disc = uv().sub(0.5).length().mul(2).oneMinus().saturate().pow(1.25);
 
   material.positionNode = posAttr;
   material.colorNode = tint;
   material.opacityNode = disc.mul(u.opacity);
-  material.scaleNode = u.size.mul(seed.mul(0.9).add(0.45)).mul(speed.mul(0.1).add(1).min(1.6));
+  material.scaleNode = u.size.mul(seed.mul(0.9).add(0.45)).mul(speed.mul(0.1).add(1).min(1.6)).mul(glow.mul(0.8).add(1));
 
   const sprite = new THREE.Sprite(material);
   sprite.count = count;
@@ -328,6 +352,7 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     reducedMotion,
     u,
     baseTurbulence: u.turbulence.value,
+    basePointerStrength: u.pointerStrength.value,
     /** Mood values as currently shown, easing towards `sceneState.mood`. */
     mood: { turbulence: 1, calm: 1, energy: 0, tintMix: 0, tint: [0.838, 0.064, 0.319] },
     nextStorm: 0,
@@ -455,6 +480,17 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   const shock = sceneState.shock;
   shock.age += dt;
   u.shockAge.value = shock.age;
+  u.shockPower.value = shock.power;
+
+  // Hold to charge: builds after a short press so plain taps stay taps.
+  const charge = sceneState.charge;
+  if (charge.held && !reducedMotion && performance.now() - charge.since > 250) {
+    charge.level = Math.min(1, charge.level + dt / 1.4);
+    sceneState.energy = Math.max(sceneState.energy, charge.level * 0.8);
+  }
+  u.charge.value = charge.level;
+  u.chargePos.value.set(charge.x * halfW, charge.y * halfH);
+  u.pointerStrength.value = sim.basePointerStrength * (1 - charge.level * 0.7);
   u.shockPos.value.set(shock.x * halfW, shock.y * halfH);
 
   // Mood (Lagos time of day and weather): ease over a few seconds, never snap.

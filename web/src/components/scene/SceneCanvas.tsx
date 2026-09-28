@@ -198,6 +198,10 @@ export default function SceneCanvas() {
       sceneState.pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
       sceneState.pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
       sceneState.pointer.active = e.pointerType === "mouse" || e.pressure > 0;
+      if (sceneState.charge.held) {
+        sceneState.charge.x = sceneState.pointer.x;
+        sceneState.charge.y = sceneState.pointer.y;
+      }
     };
     const leave = () => {
       sceneState.pointer.active = false;
@@ -205,13 +209,36 @@ export default function SceneCanvas() {
     const up = (e: PointerEvent) => {
       if (e.pointerType !== "mouse") leave();
     };
+    // Letting go of a charged hold sets off a supernova; a cancelled touch (it
+    // became a scroll) just lets the particles drift back.
+    const release = () => {
+      const c = sceneState.charge;
+      if (c.held && c.level > 0.15) {
+        sceneState.shock.x = c.x;
+        sceneState.shock.y = c.y;
+        sceneState.shock.age = 0;
+        sceneState.shock.power = 1 + c.level * 2;
+        sceneState.energy = 1;
+      }
+      c.held = false;
+      c.level = 0;
+    };
+    const cancel = () => {
+      sceneState.charge.held = false;
+      sceneState.charge.level = 0;
+    };
+    window.addEventListener("pointerup", release, { passive: true });
+    window.addEventListener("pointercancel", cancel, { passive: true });
+    window.addEventListener("blur", cancel);
     // Clicks on the page (not on controls or form fields) send a shockwave through the particles.
     const shock = (e: PointerEvent) => {
       if ((e.target as Element | null)?.closest("input, textarea, select, label, [role=dialog]")) return;
       sceneState.shock.x = (e.clientX / window.innerWidth) * 2 - 1;
       sceneState.shock.y = -(e.clientY / window.innerHeight) * 2 + 1;
       sceneState.shock.age = 0;
+      sceneState.shock.power = 1;
       sceneState.energy = Math.max(sceneState.energy, 0.8);
+      Object.assign(sceneState.charge, { held: true, x: sceneState.shock.x, y: sceneState.shock.y, since: performance.now(), level: 0 });
     };
     window.addEventListener("pointerdown", shock, { passive: true });
 
@@ -253,6 +280,9 @@ export default function SceneCanvas() {
       window.removeEventListener("pointerdown", move);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", up);
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", cancel);
+      window.removeEventListener("blur", cancel);
       window.removeEventListener("pointerdown", shock);
       window.removeEventListener("pointerover", over);
       window.removeEventListener("pointerdown", askTilt);

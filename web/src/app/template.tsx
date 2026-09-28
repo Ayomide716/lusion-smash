@@ -24,6 +24,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
     sceneState.shock.x = 0;
     sceneState.shock.y = 0;
     sceneState.shock.age = 0;
+    sceneState.shock.power = 1;
     sceneState.energy = 1;
   }, [skip]);
 
