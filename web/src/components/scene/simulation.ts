@@ -290,7 +290,7 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
       const toward = u.chargePos.sub(p.xy);
       const dist = toward.length();
       const dir = toward.div(dist.add(0.001));
-      const pull = smoothstep(0.04, 0.5, dist).mul(u.charge).mul(seed.mul(8).add(14));
+      const pull = smoothstep(0.02, 0.22, dist).mul(u.charge).mul(seed.mul(8).add(14));
       acc.xy.addAssign(dir.mul(pull).add(vec2(dir.y.negate(), dir.x).mul(u.charge.mul(5))));
       acc.z.addAssign(p.z.mul(u.charge).mul(-3));
       const shake = vec2(time.mul(53).add(seed.mul(91)).sin(), time.mul(61).add(seed.mul(57)).cos());
@@ -516,7 +516,7 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   }
   u.charge.value = charge.level;
   u.chargePos.value.set(charge.x * halfW, charge.y * halfH);
-  u.pointerStrength.value = sim.basePointerStrength * (1 - charge.level * 0.7);
+  u.pointerStrength.value = sim.basePointerStrength * (1 - charge.level * 0.95);
   u.shockPos.value.set(shock.x * halfW, shock.y * halfH);
 
   // Mood (Lagos time of day and weather): ease over a few seconds, never snap.
