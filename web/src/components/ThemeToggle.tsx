@@ -1,12 +1,13 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { motion } from "motion/react";
-import { getTheme, subscribeTheme, toggleTheme } from "@/lib/theme";
+import { getTheme, subscribeTheme, toggleTheme, watchAutoTheme } from "@/lib/theme";
 
 /** Sun ↔ moon: the sun's rays retract and a bite slides across to make a crescent. */
 export function ThemeToggle() {
   const dark = useSyncExternalStore(subscribeTheme, () => getTheme() === "dark", () => false);
+  useEffect(watchAutoTheme, []);
   return (
     <button
       type="button"
