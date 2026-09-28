@@ -40,59 +40,6 @@ html[data-theme="dark"] {
   color-scheme: dark;
 }
 
-/* Mood accent: the site's accent follows the Lagos phase of day (set on <html>
-   by lib/mood.ts). Pink by day; amber dawn, burnt-orange dusk, violet night.
-   Light-mode shades keep text contrast on white; dark mode uses lighter ones.
-   Registered so the change fades instead of snapping. */
-@property --color-accent {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: #db2777;
-}
-@property --color-accent-soft {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: #fce7f3;
-}
-@property --color-pink {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: #ec4899;
-}
-html {
-  transition:
-    --color-accent 1.6s ease,
-    --color-accent-soft 1.6s ease,
-    --color-pink 1.6s ease;
-}
-html[data-phase="dawn"] {
-  --color-accent: #b45309;
-  --color-accent-soft: #fef3c7;
-  --color-pink: #f59e0b;
-}
-html[data-phase="dusk"] {
-  --color-accent: #c2410c;
-  --color-accent-soft: #ffedd5;
-  --color-pink: #f97316;
-}
-html[data-phase="night"] {
-  --color-accent: #6d28d9;
-  --color-accent-soft: #ede9fe;
-  --color-pink: #8b5cf6;
-}
-html[data-theme="dark"][data-phase="dawn"] {
-  --color-accent: #fbbf24;
-  --color-accent-soft: #3a2a06;
-}
-html[data-theme="dark"][data-phase="dusk"] {
-  --color-accent: #fb923c;
-  --color-accent-soft: #3a1a06;
-}
-html[data-theme="dark"][data-phase="night"] {
-  --color-accent: #a78bfa;
-  --color-accent-soft: #1e1545;
-}
-
 /* Theme switch: the new theme grows as a circle (driven from lib/theme.ts). */
 ::view-transition-old(root),
 ::view-transition-new(root) {
