@@ -7,6 +7,7 @@ import { CircleReveal } from "@/components/motion/CircleReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { ChatIcon } from "@/components/ChatIcon";
 import { CopyEmail } from "@/components/CopyEmail";
+import { ReplyTime } from "@/components/ReplyTime";
 
 
 export function Contact() {
@@ -45,6 +46,7 @@ export function Contact() {
                 </span>
               </a>
             </Magnetic>
+            <ReplyTime className="mt-4 opacity-85" />
             <dl className="mt-10 space-y-5 text-sm">
               <div>
                 <dt className="font-mono text-xs tracking-widest uppercase opacity-70">Email</dt>

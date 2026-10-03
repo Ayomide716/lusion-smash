@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { site } from "@/content/site";
 import { ChatIcon } from "@/components/ChatIcon";
+import { useOnline } from "@/components/ReplyTime";
 
 /**
  * Phones only: a WhatsApp button that slides in once you scroll past the hero,
@@ -10,6 +11,7 @@ import { ChatIcon } from "@/components/ChatIcon";
  */
 export function WhatsAppFloat() {
   const [show, setShow] = useState(false);
+  const online = useOnline();
 
   useEffect(() => {
     let pastHero = false;
@@ -46,7 +48,12 @@ export function WhatsAppFloat() {
         show ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0"
       }`}
     >
-      <ChatIcon />
+      <span className="relative">
+        <ChatIcon />
+        {online && (
+          <span aria-label="Online now" className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-400 ring-2 ring-accent" />
+        )}
+      </span>
       Chat on WhatsApp
     </a>
   );
