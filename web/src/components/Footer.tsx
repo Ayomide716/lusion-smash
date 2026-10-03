@@ -5,6 +5,7 @@ import { LagosWeather } from "@/components/LagosWeather";
 import { LiveCount } from "@/components/LiveCount";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { Wordmark } from "@/components/motion/Wordmark";
+import { LastUpdated } from "@/components/LastUpdated";
 
 export function Footer() {
   return (
@@ -58,6 +59,10 @@ export function Footer() {
         <p>
           © {new Date().getFullYear()} {site.name}
           <span className="text-muted/70"> · psst… type &ldquo;party&rdquo; (on a phone, into the name box up top)</span>
+          <span className="block sm:inline">
+            <span className="hidden sm:inline"> · </span>
+            <LastUpdated />
+          </span>
         </p>
         <p>
           Built with Next.js, WebGL/WebGPU, TSL, Rust and C++ ·{" "}
