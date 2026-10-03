@@ -214,3 +214,92 @@ export function setSound(on: boolean) {
   }
   listeners.forEach((l) => l());
 }
+
+// Hold to charge: a low hum that rises in pitch and trembles faster as the
+// charge builds (full at 1.4s, matching the particles).
+let hum: { osc: OscillatorNode; lfo: OscillatorNode; out: GainNode } | null = null;
+
+export function startChargeHum() {
+  if (!enabled || hum) return;
+  const { ctx, master } = audio();
+  const t = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(70, t);
+  osc.frequency.exponentialRampToValueAtTime(280, t + 1.4);
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.Q.value = 6;
+  filter.frequency.setValueAtTime(200, t);
+  filter.frequency.exponentialRampToValueAtTime(1600, t + 1.4);
+  // Tremolo: the "trembling" of the field.
+  const trem = ctx.createGain();
+  trem.gain.value = 0.7;
+  const lfo = ctx.createOscillator();
+  lfo.frequency.setValueAtTime(4, t);
+  lfo.frequency.linearRampToValueAtTime(18, t + 1.4);
+  const depth = ctx.createGain();
+  depth.gain.value = 0.3;
+  lfo.connect(depth).connect(trem.gain);
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0, t);
+  out.gain.linearRampToValueAtTime(0.05, t + 1.4);
+  osc.connect(filter).connect(trem).connect(out).connect(master);
+  osc.start(t);
+  lfo.start(t);
+  hum = { osc, lfo, out };
+}
+
+function stopHum(fade: number) {
+  if (!hum || !ctx) return;
+  const t = ctx.currentTime;
+  const { osc, lfo, out } = hum;
+  out.gain.cancelScheduledValues(t);
+  out.gain.setValueAtTime(out.gain.value, t);
+  out.gain.linearRampToValueAtTime(0, t + fade);
+  osc.stop(t + fade + 0.02);
+  lfo.stop(t + fade + 0.02);
+  hum = null;
+}
+
+/** Let go before the burst (or a cancelled touch): the hum just fades. */
+export function stopChargeHum() {
+  stopHum(0.15);
+}
+
+/** The supernova: a deep falling boom under a bright burst of noise. */
+export function playSupernova(level: number) {
+  stopHum(0.03);
+  if (!enabled) return;
+  const { ctx, master } = audio();
+  const t = ctx.currentTime;
+  const loud = 0.5 + level * 0.5;
+
+  const boom = ctx.createOscillator();
+  boom.type = "sine";
+  boom.frequency.setValueAtTime(140, t);
+  boom.frequency.exponentialRampToValueAtTime(38, t + 0.9);
+  const boomGain = ctx.createGain();
+  boomGain.gain.setValueAtTime(0, t);
+  boomGain.gain.linearRampToValueAtTime(0.22 * loud, t + 0.01);
+  boomGain.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+  boom.connect(boomGain).connect(master);
+  boom.start(t);
+  boom.stop(t + 1.15);
+
+  const seconds = 0.9;
+  const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * seconds), ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const sweep = ctx.createBiquadFilter();
+  sweep.type = "lowpass";
+  sweep.frequency.setValueAtTime(6000, t);
+  sweep.frequency.exponentialRampToValueAtTime(300, t + seconds);
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.08 * loud, t);
+  noiseGain.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
+  noise.connect(sweep).connect(noiseGain).connect(master);
+  noise.start(t);
+}

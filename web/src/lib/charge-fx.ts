@@ -1,8 +1,9 @@
-// Feedback for hold-to-charge beyond the particles: vibration (and sound).
+// Feedback for hold-to-charge beyond the particles: vibration and sound.
 // The charge itself starts building 250ms into a press (see simulation.ts),
 // so the effects wait for that too and plain taps stay silent.
 import { sceneState } from "./scene-store";
 import { buzzCharge, buzzRelease, buzzStop } from "./haptics";
+import { playSupernova, startChargeHum, stopChargeHum } from "./sound";
 
 const DELAY_MS = 250;
 let timer: number | undefined;
@@ -15,6 +16,7 @@ export const chargeFx = {
       if (!sceneState.charge.held || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       charging = true;
       buzzCharge();
+      startChargeHum();
     }, DELAY_MS);
   },
   /** `level` is the charge released into a supernova, or null for a fizzle. */
@@ -22,7 +24,12 @@ export const chargeFx = {
     window.clearTimeout(timer);
     if (!charging) return;
     charging = false;
-    if (level === null) buzzStop();
-    else buzzRelease(level);
+    if (level === null) {
+      buzzStop();
+      stopChargeHum();
+    } else {
+      buzzRelease(level);
+      playSupernova(level);
+    }
   },
 };
