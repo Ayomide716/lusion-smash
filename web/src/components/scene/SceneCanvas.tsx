@@ -9,6 +9,7 @@ import { PostFX } from "./PostFX";
 import { sceneState, setStats } from "@/lib/scene-store";
 import { site } from "@/content/site";
 import { getTheme, subscribeTheme } from "@/lib/theme";
+import { chargeFx } from "@/lib/charge-fx";
 
 type Budget = { count: number; size: number; quality: "high" | "low" };
 
@@ -218,6 +219,7 @@ export default function SceneCanvas() {
     // became a scroll) just lets the particles drift back.
     const release = () => {
       const c = sceneState.charge;
+      if (c.held) chargeFx.end(c.level > 0.15 ? c.level : null);
       if (c.held && c.level > 0.15) {
         sceneState.shock.x = c.x;
         sceneState.shock.y = c.y;
@@ -229,6 +231,7 @@ export default function SceneCanvas() {
       c.level = 0;
     };
     const cancel = () => {
+      if (sceneState.charge.held) chargeFx.end(null);
       sceneState.charge.held = false;
       sceneState.charge.level = 0;
     };
@@ -244,6 +247,7 @@ export default function SceneCanvas() {
       sceneState.shock.power = 1;
       sceneState.energy = Math.max(sceneState.energy, 0.8);
       Object.assign(sceneState.charge, { held: true, x: sceneState.shock.x, y: sceneState.shock.y, since: performance.now(), level: 0 });
+      chargeFx.press();
     };
     window.addEventListener("pointerdown", shock, { passive: true });
 
