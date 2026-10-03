@@ -25,6 +25,7 @@ import { buildShapes, sculptureFor, SHAPES, textShape, type ShapeName } from "./
 import { sceneState, setStats } from "@/lib/scene-store";
 import { FIELD_SIZE, STATE, type Engine } from "@/lib/engine";
 import { peers } from "@/lib/presence";
+import { currentHoliday } from "@/lib/holidays";
 
 export type SimulationOptions = {
   count: number;
@@ -206,6 +207,9 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     party: uniform(0),
     matrix: uniform(0),
     floorY: uniform(-2),
+    /** Holiday snow: the loose dust particles fall and drift (0 or 1). */
+    snow: uniform(0),
+    snowColor: uniform(new THREE.Color(0.45, 0.55, 0.72)),
     halfH: uniform(2),
     hover: uniform(0),
     wordScale: uniform(1),
@@ -270,6 +274,10 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     const churn = select(dust, float(0.6), u.energy.mul(1.5).add(0.35));
     acc.addAssign(flow.mul(u.turbulence).mul(churn).mul(u.gravity.mul(-0.75).add(1)));
     acc.y.subAssign(u.gravity.mul(7));
+    If(dust.and(u.snow.greaterThan(0.5)), () => {
+      acc.y.subAssign(seed.mul(0.5).add(0.25));
+      acc.x.addAssign(time.mul(0.7).add(seed.mul(40)).sin().mul(0.3));
+    });
     acc.y.subAssign(u.matrix.mul(seed.mul(6).add(3)));
     // Fast scrolling drags the field along with the page (warp speed); the
     // springs snap it back once scrolling stops.
@@ -333,8 +341,9 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
         v.x.mulAssign(0.85);
       });
     });
-    // Matrix: rain off the bottom of the screen reappears at the top.
-    If(u.matrix.greaterThan(0.5).and(next.y.lessThan(u.halfH.mul(-1.1))), () => {
+    // Matrix rain (and holiday snow) off the bottom of the screen reappears at the top.
+    const wraps = u.matrix.greaterThan(0.5).or(dust.and(u.snow.greaterThan(0.5)));
+    If(wraps.and(next.y.lessThan(u.halfH.mul(-1.1))), () => {
       next.y.addAssign(u.halfH.mul(2.2));
     });
     vel.assign(vec4(v, 0));
@@ -373,7 +382,10 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
   const hue = seed.mul(6.283).add(time.mul(1.5)).add(posAttr.x.mul(0.6));
   const rainbow = vec3(hue.cos(), hue.add(2.094).cos(), hue.add(4.188).cos()).mul(0.5).add(0.5).pow(vec3(2.2));
   const green = vec3(0.02, 0.85, 0.15).mul(seed.mul(0.6).add(0.4));
-  const tint = mix(mix(charged, rainbow, u.party), green, u.matrix);
+  const partied = mix(mix(charged, rainbow, u.party), green, u.matrix);
+  const isDust = hash(instanceIndex.add(7919)).lessThan(0.08);
+  const flake = select(isDust, u.snow, float(0));
+  const tint = mix(partied, u.snowColor, flake);
   const disc = uv().sub(0.5).length().mul(2).oneMinus().saturate().pow(1.25);
 
   material.positionNode = posAttr;
@@ -385,6 +397,7 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     .mul(seed.mul(0.9).add(0.45))
     .mul(speed.mul(0.1).add(1).min(1.6))
     .mul(glow.mul(0.8).add(1))
+    .mul(flake.mul(1.4).add(1))
     .mul(vec2(float(1).div(stretch.mul(0.25).add(1)), stretch.add(1)));
 
   const sprite = new THREE.Sprite(material);
@@ -433,6 +446,9 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
       material.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
       material.needsUpdate = true;
       u.opacity.value = dark ? 0.5 : 0.85;
+      // Snow: white on the dark page, a soft blue-grey on the white one.
+      if (dark) u.snowColor.value.setRGB(0.9, 0.93, 1);
+      else u.snowColor.value.setRGB(0.45, 0.55, 0.72);
     },
     dispose() {
       material.dispose();
@@ -551,6 +567,11 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   u.tilt.value.set(sceneState.tilt.x * 2.2, sceneState.tilt.y * 1.6);
 
   const shock = sceneState.shock;
+  // New Year: every fresh tap is a burst of rainbow fireworks.
+  if (shock.age === 0 && currentHoliday()?.fireworks && !sceneState.fx.mode && !reducedMotion) {
+    sceneState.fx.mode = "party";
+    sceneState.fx.until = performance.now() + 2500;
+  }
   shock.age += dt;
   u.shockAge.value = shock.age;
   u.shockPower.value = shock.power;
@@ -574,8 +595,13 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   mood.turbulence += (target.turbulence - mood.turbulence) * k;
   mood.calm += (target.calm - mood.calm) * k;
   mood.energy += (target.energy - mood.energy) * k;
-  mood.tintMix += (target.tintMix - mood.tintMix) * k;
-  for (let i = 0; i < 3; i++) mood.tint[i] += (target.tint[i] - mood.tint[i]) * k;
+  // A holiday colour (Halloween orange, Independence green) overrides the mood tint for the day.
+  const holiday = currentHoliday();
+  const tintTarget = holiday?.tint ?? target.tint;
+  const mixTarget = holiday?.tint ? 0.6 : target.tintMix;
+  mood.tintMix += (mixTarget - mood.tintMix) * k;
+  for (let i = 0; i < 3; i++) mood.tint[i] += (tintTarget[i] - mood.tint[i]) * k;
+  u.snow.value = holiday?.snow ? 1 : 0;
   u.turbulence.value = sim.baseTurbulence * mood.turbulence;
   u.moodMix.value = mood.tintMix;
   u.moodTint.value.setRGB(mood.tint[0], mood.tint[1], mood.tint[2]);

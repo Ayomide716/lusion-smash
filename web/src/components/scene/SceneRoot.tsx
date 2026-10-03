@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { startMood } from "@/lib/mood";
+import { startHolidays } from "@/lib/holidays";
 import { startPresence } from "@/lib/presence";
 import { FluidSmoke } from "./FluidSmoke";
 import { PeerCursors } from "./PeerCursors";
@@ -18,6 +19,7 @@ export function SceneRoot() {
     const start = () => {
       startMood();
       startPresence();
+      startHolidays();
     };
     const idle = window.requestIdleCallback?.(start, { timeout: 3000 }) ?? window.setTimeout(start, 1500);
     return () => {
