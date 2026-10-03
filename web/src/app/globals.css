@@ -129,6 +129,14 @@ html[data-theme="dark"] {
   }
 }
 
+/* Mice and trackpads: a thin pink scrollbar instead of the browser's grey one. */
+@media (pointer: fine) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-accent) 75%, transparent) transparent;
+  }
+}
+
 /* Phones: frosted-glass blur (backdrop-filter) is costly to composite over a
    live WebGL canvas while scrolling, so glass becomes a near-solid fill there. */
 @media (pointer: coarse) {
