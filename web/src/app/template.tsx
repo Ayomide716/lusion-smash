@@ -9,9 +9,9 @@ import { sceneState } from "@/lib/scene-store";
 const mounts = { count: 0 };
 
 /**
- * Page transition through the particles: on each navigation the field blasts
- * outward from the centre and reassembles into the new page's shapes, while the
- * page itself fades up.
+ * Page transition: a pink curtain sweeps up off the new page while, behind it,
+ * the particle field blasts outward from the centre and reassembles into the
+ * new page's shapes; the page itself fades up.
  */
 export default function Template({ children }: { children: React.ReactNode }) {
   const reduce = useReducedMotion();
@@ -29,12 +29,23 @@ export default function Template({ children }: { children: React.ReactNode }) {
   }, [skip]);
 
   return (
-    <motion.div
-      initial={skip ? false : { opacity: 0, y: 32 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-    >
-      {children}
-    </motion.div>
+    <>
+      {!skip && (
+        <motion.div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-[80] bg-accent print:hidden"
+          initial={{ clipPath: "inset(0 0 0% 0)" }}
+          animate={{ clipPath: "inset(0 0 100% 0)" }}
+          transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
+        />
+      )}
+      <motion.div
+        initial={skip ? false : { opacity: 0, y: 32 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {children}
+      </motion.div>
+    </>
   );
 }
