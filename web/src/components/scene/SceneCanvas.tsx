@@ -10,6 +10,7 @@ import { sceneState, setStats } from "@/lib/scene-store";
 import { site } from "@/content/site";
 import { getTheme, subscribeTheme } from "@/lib/theme";
 import { chargeFx } from "@/lib/charge-fx";
+import { startSecretKeys } from "@/lib/secrets";
 
 type Budget = { count: number; size: number; quality: "high" | "low" };
 
@@ -300,6 +301,8 @@ export default function SceneCanvas() {
       document.documentElement.removeEventListener("pointerleave", leave);
     };
   }, []);
+
+  useEffect(startSecretKeys, []);
 
   useEffect(() => {
     setStats({ motion: reducedMotion ? "Reduced" : "Full" });

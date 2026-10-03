@@ -14,6 +14,8 @@ export type SceneStats = {
 
 type Listener = () => void;
 
+export type SecretMode = "gravity" | "party" | "matrix";
+
 const listeners = new Set<Listener>();
 
 let stats: SceneStats = { backend: "Starting", particles: 0, fps: 0, motion: "—", engineMs: null };
@@ -33,6 +35,8 @@ export const sceneState = {
   name: null as string | null,
   /** A short message being spelled (lib/say.ts). */
   message: null as string | null,
+  /** A secret command's effect (lib/secrets.ts) and when it ends (performance.now()). */
+  fx: { mode: null as SecretMode | null, until: 0 },
   /** When the visitor last moved, scrolled, tapped or typed (performance.now()). */
   lastInput: 0,
   /** Device tilt on phones, -1..1 per axis. */

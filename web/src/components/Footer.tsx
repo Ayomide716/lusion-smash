@@ -55,7 +55,10 @@ export function Footer() {
       </div>
 
       <div className="container-page flex flex-col gap-2 border-t border-line py-6 text-xs sm:flex-row sm:justify-between">
-        <p>© {new Date().getFullYear()} {site.name}</p>
+        <p>
+          © {new Date().getFullYear()} {site.name}
+          <span className="text-muted/70"> · psst… type &ldquo;party&rdquo; (on a phone, into the name box up top)</span>
+        </p>
         <p>
           Built with Next.js, WebGL/WebGPU, TSL, Rust and C++ ·{" "}
           <Link href="/how-it-works" className="text-fg underline decoration-accent/40 underline-offset-4 hover:decoration-accent">

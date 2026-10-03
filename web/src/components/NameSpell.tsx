@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { getIntroDone, sceneState, subscribeIntro } from "@/lib/scene-store";
 import { say } from "@/lib/say";
+import { runSecret } from "@/lib/secrets";
 
 const MAX = 14;
 /** The last name typed, kept on this device only, for "welcome back". */
@@ -75,6 +76,11 @@ export function NameSpell({ className }: { className?: string }) {
           window.clearTimeout(timer.current);
           // Wait for a pause in typing, so each keystroke doesn't restart the morph.
           timer.current = window.setTimeout(() => {
+            // A secret command typed here runs instead of being spelled (phones have no page keyboard).
+            if (runSecret(value)) {
+              sceneState.name = null;
+              return;
+            }
             sceneState.name = value || null;
             // Remembered for next time; clearing the box forgets it.
             if (value) storage("local")?.setItem(STORE, value);

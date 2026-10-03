@@ -201,6 +201,12 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     chargePos: uniform(new THREE.Vector2()),
     /** Smoothed scroll speed in world units per second (+ = scrolling down). */
     streak: uniform(0),
+    /** Secret commands, each 0..1 (lib/secrets.ts). */
+    gravity: uniform(0),
+    party: uniform(0),
+    matrix: uniform(0),
+    floorY: uniform(-2),
+    halfH: uniform(2),
     hover: uniform(0),
     wordScale: uniform(1),
     wordOffset: uniform(new THREE.Vector3()),
@@ -253,12 +259,18 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
 
     const p = pos.xyz;
     // While charging, the springs let go so the shape can be drawn in.
-    const spring = select(dust, float(0.04), u.spring.mul(seed.mul(0.8).add(0.6))).mul(u.charge.mul(-0.85).add(1));
+    const spring = select(dust, float(0.04), u.spring.mul(seed.mul(0.8).add(0.6)))
+      .mul(u.charge.mul(-0.85).add(1))
+      // Gravity and the matrix rain let go of the shape too.
+      .mul(u.gravity.mul(-0.97).add(1))
+      .mul(u.matrix.mul(-0.92).add(1));
     const acc = target.sub(p).mul(spring).toVar();
 
     const flow = curlNoise(p.mul(0.55).add(vec3(0, time.mul(0.07), time.mul(0.11))));
     const churn = select(dust, float(0.6), u.energy.mul(1.5).add(0.35));
-    acc.addAssign(flow.mul(u.turbulence).mul(churn));
+    acc.addAssign(flow.mul(u.turbulence).mul(churn).mul(u.gravity.mul(-0.75).add(1)));
+    acc.y.subAssign(u.gravity.mul(7));
+    acc.y.subAssign(u.matrix.mul(seed.mul(6).add(3)));
     // Fast scrolling drags the field along with the page (warp speed); the
     // springs snap it back once scrolling stops.
     acc.y.addAssign(u.streak.mul(seed.mul(0.5).add(0.15)));
@@ -310,9 +322,23 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     });
 
     const damp = u.damping.pow(u.dt.mul(60));
-    const v = vel.xyz.mul(damp).add(acc.mul(u.dt));
+    const v = vel.xyz.mul(damp).add(acc.mul(u.dt)).toVar();
+    const next = p.add(v.mul(u.dt)).toVar();
+    // Gravity: land on the bottom of the screen in a loose pile and bounce a little.
+    If(u.gravity.greaterThan(0.01), () => {
+      const floor = u.floorY.add(seed.mul(0.3));
+      If(next.y.lessThan(floor), () => {
+        next.y.assign(floor);
+        v.y.assign(v.y.abs().mul(0.3));
+        v.x.mulAssign(0.85);
+      });
+    });
+    // Matrix: rain off the bottom of the screen reappears at the top.
+    If(u.matrix.greaterThan(0.5).and(next.y.lessThan(u.halfH.mul(-1.1))), () => {
+      next.y.addAssign(u.halfH.mul(2.2));
+    });
     vel.assign(vec4(v, 0));
-    pos.assign(vec4(p.add(v.mul(u.dt)), 1));
+    pos.assign(vec4(next, 1));
   })().compute(count);
 
   // Pink on white: normal alpha blending (additive light vanishes on a white
@@ -342,7 +368,12 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
   // Charging glow: particles near the press heat up towards white-pink and swell.
   const toCharge = posAttr.xy.sub(u.chargePos);
   const glow = toCharge.dot(toCharge).negate().div(0.6).exp().mul(u.charge);
-  const tint = mix(moody, vec3(1, 0.62, 0.82), glow.mul(0.7));
+  const charged = mix(moody, vec3(1, 0.62, 0.82), glow.mul(0.7));
+  // Secret commands: rainbow confetti, or matrix green.
+  const hue = seed.mul(6.283).add(time.mul(1.5)).add(posAttr.x.mul(0.6));
+  const rainbow = vec3(hue.cos(), hue.add(2.094).cos(), hue.add(4.188).cos()).mul(0.5).add(0.5).pow(vec3(2.2));
+  const green = vec3(0.02, 0.85, 0.15).mul(seed.mul(0.6).add(0.4));
+  const tint = mix(mix(charged, rainbow, u.party), green, u.matrix);
   const disc = uv().sub(0.5).length().mul(2).oneMinus().saturate().pow(1.25);
 
   material.positionNode = posAttr;
@@ -370,6 +401,7 @@ export function createSimulation({ count, size, reducedMotion, text }: Simulatio
     /** Mood values as currently shown, easing towards `sceneState.mood`. */
     mood: { turbulence: 1, calm: 1, energy: 0, tintMix: 0, tint: [0.838, 0.064, 0.319] },
     nextStorm: 0,
+    nextBurst: 0,
     pointerLast: { x: 0, y: 0 },
     scroll: { y: -1, speed: 0 },
     fps: { frames: 0, elapsed: 0 },
@@ -499,7 +531,21 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   sc.y = scrollY;
   sc.speed += (THREE.MathUtils.clamp(rawSpeed, -16, 16) - sc.speed) * Math.min(1, dt * 8);
   if (Math.abs(sc.speed) < 0.01) sc.speed = 0;
-  u.streak.value = sc.speed;
+  // Secret commands ease in and out over a fraction of a second.
+  const fx = sceneState.fx;
+  const active = fx.mode && performance.now() < fx.until && !reducedMotion ? fx.mode : null;
+  if (!active) fx.mode = null;
+  const kf = 1 - Math.exp(-Math.min(delta, 0.5) * 4);
+  u.gravity.value += ((active === "gravity" ? 1 : 0) - u.gravity.value) * kf;
+  u.party.value += ((active === "party" ? 1 : 0) - u.party.value) * kf;
+  u.matrix.value += ((active === "matrix" ? 1 : 0) - u.matrix.value) * kf;
+  u.floorY.value = -halfH * 0.92;
+  u.halfH.value = halfH;
+  if (active === "party" && now > sim.nextBurst) {
+    Object.assign(sceneState.shock, { x: Math.random() * 1.6 - 0.8, y: Math.random() * 1.2 - 0.6, age: 0, power: 1.5 });
+    sim.nextBurst = now + 0.7 + Math.random() * 0.5;
+  }
+  u.streak.value = sc.speed - u.matrix.value * 5;
 
   // Device tilt (phones): -1..1 per axis → sideways acceleration in world units.
   u.tilt.value.set(sceneState.tilt.x * 2.2, sceneState.tilt.y * 1.6);
