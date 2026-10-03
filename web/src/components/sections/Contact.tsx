@@ -6,6 +6,7 @@ import { SectionHeading } from "@/components/SectionHeading";
 import { CircleReveal } from "@/components/motion/CircleReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { ChatIcon } from "@/components/ChatIcon";
+import { CopyEmail } from "@/components/CopyEmail";
 
 
 export function Contact() {
@@ -48,9 +49,7 @@ export function Contact() {
               <div>
                 <dt className="font-mono text-xs tracking-widest uppercase opacity-70">Email</dt>
                 <dd className="mt-1 text-lg">
-                  <a href={`mailto:${site.email}`} data-cursor="Email" className="underline decoration-current/40 underline-offset-4 hover:decoration-current">
-                    {site.email}
-                  </a>
+                  <CopyEmail />
                 </dd>
               </div>
               <div>
