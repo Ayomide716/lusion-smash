@@ -510,8 +510,9 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
 
   // Hold to charge: builds after a short press so plain taps stay taps.
   const charge = sceneState.charge;
+  // Real time, not frames, so slow phones charge at the same pace as the hum and buzz.
   if (charge.held && !reducedMotion && performance.now() - charge.since > 250) {
-    charge.level = Math.min(1, charge.level + dt / 1.4);
+    charge.level = Math.min(1, (performance.now() - charge.since - 250) / 1400);
     sceneState.energy = Math.max(sceneState.energy, charge.level * 0.8);
   }
   u.charge.value = charge.level;
