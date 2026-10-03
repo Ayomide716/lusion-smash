@@ -485,8 +485,9 @@ export function stepSimulation(sim: Simulation, gl: THREE.WebGPURenderer, frame:
   // so it stays clear of the text and the phone keyboard.
   const name = sceneState.name && window.scrollY < height * 0.6 ? sceneState.name : null;
   // Left alone for a while, the field slowly asks if you're still there.
-  const idle = !reducedMotion && !name && performance.now() - sceneState.lastInput > IDLE_AFTER;
-  sim.setWord(name ?? (idle ? IDLE_WORD : sceneState.word));
+  const message = name ? null : sceneState.message;
+  const idle = !reducedMotion && !name && !message && performance.now() - sceneState.lastInput > IDLE_AFTER;
+  sim.setWord(name ?? message ?? (idle ? IDLE_WORD : sceneState.word));
   u.hover.value += (sim.hoverTarget - u.hover.value) * Math.min(1, dt * (idle ? 0.9 : 5));
   u.wordScale.value = Math.min(halfW * 0.8, halfH * 1.4);
   u.wordOffset.value.set(0, halfH * (name ? 0.3 : 0.05), 0.3);
