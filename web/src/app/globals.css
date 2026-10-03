@@ -299,3 +299,26 @@ html.no-intro .intro-curtain {
     height: 14px;
   }
 }
+
+/* 404 game: points float up from each hit. */
+.score-pop {
+  position: absolute;
+  translate: -50% -50%;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  white-space: nowrap;
+  color: var(--color-accent);
+  animation: score-pop 0.9s var(--ease-out-expo) forwards;
+}
+
+@keyframes score-pop {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-48px) scale(1.1);
+  }
+}
